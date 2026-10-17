@@ -1,0 +1,18 @@
+{
+  "slug": "fighter",
+  "name": "Jev Fighter",
+  "tagline": "Stick figures fight and a decision model picks every move. Fight one yourself: are you better than it?",
+  "category": "Fighting",
+  "author": {
+    "github": "Jose-Sabater",
+    "originalRepo": "https://github.com/Jose-Sabater/jev-fighter"
+  },
+  "license": "MIT",
+  "metric": {
+    "name": "Rounds won vs bots",
+    "unit": "%",
+    "higherIsBetter": true
+  },
+  "benchmark": false,
+  "updatedAt": "2026-10-12T00:00:00.000Z"
+}

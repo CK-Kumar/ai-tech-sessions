@@ -1,0 +1,9 @@
+{
+  "demos": [
+    {
+      "file": "luna-vs-jev.fight.json.gz",
+      "title": "Luna vs Jev",
+      "note": "GPT-6 Luna Decisions vs Jev 1.13, both decision models, live on the benchmark's settings (real time, raw track, 2 s deadline). Luna wins, 2-1 in rounds, every round a knockout."
+    }
+  ]
+}

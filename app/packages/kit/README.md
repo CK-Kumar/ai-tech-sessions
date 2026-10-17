@@ -1,0 +1,17 @@
+# The kit
+
+The game-independent harness every game in this repository runs on, extracted from
+[JevMan](https://github.com/opper-ai/jevman-benchmark): System One types and answer parsing, the decision model list,
+leaderboard statistics, the hub contract, the schedulers (real time and paused), the browser client (transport,
+warm-up, Login with Opper, high scores), the service (every game at `<APP_BASE_PATH>/<slug>/`, one free-credits pool),
+the bench and the submissions check. See [docs/design.md](../../docs/design.md) for how a game plugs in.
+
+- `shared/`: isomorphic (page, service, bench)
+- `client/`: the browser
+- `server/`: Node built-ins only; Node runs it as stripped TypeScript
+- `bench/`: Node; the bench CLI and the submissions check (entry points in `scripts/`)
+
+## License
+
+AGPL-3.0-or-later (see [LICENSE](../../LICENSE)), as JevMan ([joch/jevman](https://github.com/joch/jevman)), which the kit was extracted from; authors Johnny Chadda,
+Felix Wunderlich and Jose Sabater.

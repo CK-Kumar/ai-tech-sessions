@@ -1,0 +1,409 @@
+{
+  "hanoi": {
+    "model": "claude-sonnet-5-5",
+    "task": "Tower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4, 3, 2, 1]\nB: []\nC: []\nSolve it using the move_disk tool, one move per call.\nBefore each move_disk call, write one short sentence saying why this move is right.",
+    "board": {
+      "A": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "B": [],
+      "C": []
+    },
+    "moves": [
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "B"
+          }
+        },
+        "said": "Disk 1 moves to B first. This starts clearing the way for the larger disks.",
+        "result": "Done: A→B.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4, 3, 2]\nB: [1]\nC: []",
+        "context_tokens": 594,
+        "board": {
+          "A": [
+            4,
+            3,
+            2
+          ],
+          "B": [
+            1
+          ],
+          "C": []
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 2 can go to the empty peg C.",
+        "result": "Done: A→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4, 3]\nB: [1]\nC: [2]",
+        "context_tokens": 1117,
+        "board": {
+          "A": [
+            4,
+            3
+          ],
+          "B": [
+            1
+          ],
+          "C": [
+            2
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "B",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 1 goes back on top of disk 2.",
+        "result": "Done: B→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4, 3]\nB: []\nC: [2, 1]",
+        "context_tokens": 1335,
+        "board": {
+          "A": [
+            4,
+            3
+          ],
+          "B": [],
+          "C": [
+            2,
+            1
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "B"
+          }
+        },
+        "said": "Disk 3 moves to the empty peg B.",
+        "result": "Done: A→B.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4]\nB: [3]\nC: [2, 1]",
+        "context_tokens": 1555,
+        "board": {
+          "A": [
+            4
+          ],
+          "B": [
+            3
+          ],
+          "C": [
+            2,
+            1
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "C",
+            "to_peg": "A"
+          }
+        },
+        "said": "Disk 1 moves to A to free disk 2.",
+        "result": "Done: C→A.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4, 1]\nB: [3]\nC: [2]",
+        "context_tokens": 1773,
+        "board": {
+          "A": [
+            4,
+            1
+          ],
+          "B": [
+            3
+          ],
+          "C": [
+            2
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "C",
+            "to_peg": "B"
+          }
+        },
+        "said": "Disk 2 can go onto disk 3.",
+        "result": "Done: C→B.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4, 1]\nB: [3, 2]\nC: []",
+        "context_tokens": 1992,
+        "board": {
+          "A": [
+            4,
+            1
+          ],
+          "B": [
+            3,
+            2
+          ],
+          "C": []
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "B"
+          }
+        },
+        "said": "Disk 1 goes onto disk 2. That leaves disk 4 alone on A.",
+        "result": "Done: A→B.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [4]\nB: [3, 2, 1]\nC: []",
+        "context_tokens": 2210,
+        "board": {
+          "A": [
+            4
+          ],
+          "B": [
+            3,
+            2,
+            1
+          ],
+          "C": []
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 4 can now move to empty peg C.",
+        "result": "Done: A→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: []\nB: [3, 2, 1]\nC: [4]",
+        "context_tokens": 2442,
+        "board": {
+          "A": [],
+          "B": [
+            3,
+            2,
+            1
+          ],
+          "C": [
+            4
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "B",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 1 moves onto disk 4.",
+        "result": "Done: B→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: []\nB: [3, 2]\nC: [4, 1]",
+        "context_tokens": 2661,
+        "board": {
+          "A": [],
+          "B": [
+            3,
+            2
+          ],
+          "C": [
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "B",
+            "to_peg": "A"
+          }
+        },
+        "said": "Disk 2 moves to empty peg A.",
+        "result": "Done: B→A.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [2]\nB: [3]\nC: [4, 1]",
+        "context_tokens": 2879,
+        "board": {
+          "A": [
+            2
+          ],
+          "B": [
+            3
+          ],
+          "C": [
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "C",
+            "to_peg": "A"
+          }
+        },
+        "said": "Disk 1 goes onto disk 2 to free disk 3.",
+        "result": "Done: C→A.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [2, 1]\nB: [3]\nC: [4]",
+        "context_tokens": 3096,
+        "board": {
+          "A": [
+            2,
+            1
+          ],
+          "B": [
+            3
+          ],
+          "C": [
+            4
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "B",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 3 moves onto disk 4.",
+        "result": "Done: B→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [2, 1]\nB: []\nC: [4, 3]",
+        "context_tokens": 3320,
+        "board": {
+          "A": [
+            2,
+            1
+          ],
+          "B": [],
+          "C": [
+            4,
+            3
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "B"
+          }
+        },
+        "said": "Disk 1 moves to empty peg B.",
+        "result": "Done: A→B.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: [2]\nB: [1]\nC: [4, 3]",
+        "context_tokens": 3538,
+        "board": {
+          "A": [
+            2
+          ],
+          "B": [
+            1
+          ],
+          "C": [
+            4,
+            3
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "A",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 2 goes onto disk 3.",
+        "result": "Done: A→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: []\nB: [1]\nC: [4, 3, 2]",
+        "context_tokens": 3755,
+        "board": {
+          "A": [],
+          "B": [
+            1
+          ],
+          "C": [
+            4,
+            3,
+            2
+          ]
+        }
+      },
+      {
+        "call": {
+          "name": "move_disk",
+          "arguments": {
+            "from_peg": "B",
+            "to_peg": "C"
+          }
+        },
+        "said": "Disk 1 goes on top of disk 2 to finish the tower.",
+        "result": "Done: B→C.\nTower of Hanoi. Move every disk to peg C. Move one disk at a time, only the top disk of a peg, and never put a bigger disk on a smaller one. Disks are numbers (bigger number = bigger disk); each peg is listed bottom to top.\n4 disks.\nA: []\nB: []\nC: [4, 3, 2, 1]",
+        "context_tokens": 3973,
+        "board": {
+          "A": [],
+          "B": [],
+          "C": [
+            4,
+            3,
+            2,
+            1
+          ]
+        }
+      }
+    ]
+  },
+  "fight": [
+    {
+      "state": {
+        "you": "100 HP, meter 0, standing, free to act, 0.4 from your wall",
+        "opponent": "100 HP, meter 0, standing, free to act, 6.4 from their wall",
+        "distance": "2.1",
+        "time": "round 1, 60 s left, rounds won 0-0",
+        "recent": "none yet"
+      },
+      "model": "GPT-6 Luna Decisions",
+      "choice": "block_high",
+      "ms": 545,
+      "late": false
+    },
+    {
+      "state": {
+        "you": "100 HP, meter 0, blocking high, 0.4 from your wall",
+        "opponent": "100 HP, meter 0, standing, free to act, 6.4 from their wall",
+        "distance": "2.1",
+        "time": "round 1, 60 s left, rounds won 0-0",
+        "recent": "none yet"
+      },
+      "model": "GPT-6 Luna Decisions",
+      "choice": "dash_forward",
+      "ms": 315,
+      "late": false
+    },
+    {
+      "state": {
+        "you": "100 HP, meter 0, standing, free to act, 3.1 from your wall",
+        "opponent": "100 HP, meter 0, standing, free to act, 3.3 from their wall",
+        "distance": "2.6",
+        "time": "round 1, 60 s left, rounds won 0-0",
+        "recent": "none yet"
+      },
+      "model": "GPT-6 Luna (thinking)",
+      "choice": "dash_forward",
+      "ms": 2802,
+      "late": true
+    }
+  ]
+}
