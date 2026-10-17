@@ -4,6 +4,7 @@
 // needs so much compute. A simulation: the tokenizer, the IDs and the scores are made up.
 import { h } from '../dom.ts';
 import { drawLoops, drawMatmul, drawNetwork } from './network-draw.ts';
+import { drawMap } from './network-map.ts';
 
 // A fake dictionary of pieces. Real ones have ~100,000 pieces or more.
 const IDS: Record<string, number> = {
@@ -21,8 +22,9 @@ const PASSES: [string, number][][] = [
 ];
 
 const STEPS = [
-  { name: 'Pieces', line: 'The model can’t read words. The text is cut into pieces, and a piece is not always a word.' },
+  { name: 'Pieces', line: 'The model never sees a tool, or even a word. The text is cut into pieces, and a piece is not always a word.' },
   { name: 'Numbers', line: 'Each piece has a number: its place in a dictionary of pieces.' },
+  { name: 'Close in meaning', line: 'Training gave each piece a spot on a map. Pieces used the same way end up close.' },
   { name: 'The formula', line: 'The numbers go through one giant formula: multiply and add, layer after layer.' },
   { name: 'Next piece', line: 'Out comes a score for every piece in the dictionary. The top one wins.' },
   { name: 'Again', line: 'Add it to the text and run the formula again. One piece at a time.' },
@@ -38,6 +40,7 @@ export function networkScene(host: HTMLElement): () => void {
   const net = drawNetwork();
   const mm = drawMatmul();
   const loops = drawLoops();
+  const map = drawMap();
   const pills = STEPS.map((s, k) => h('button.tk-pill', { type: 'button' }, h('span.tk-num', null, String(k + 1)), s.name) as HTMLButtonElement);
   const line = h('p.tk-line');
   const sentence = h('p.nn-sentence');
@@ -56,7 +59,7 @@ export function networkScene(host: HTMLElement): () => void {
       null,
       h('header.bar-top', null, h('p.scene-title', null, h('b', null, 'The model.'), ' Numbers in, numbers out.')),
       h('nav.tk-steps', { 'aria-label': 'Steps' }, ...pills),
-      h('section.tk-card.nn-card', null, line, sentence, flow, loops.el, hook),
+      h('section.tk-card.nn-card', null, line, sentence, flow, map.el, loops.el, hook),
     ),
   );
 
@@ -108,27 +111,29 @@ export function networkScene(host: HTMLElement): () => void {
     START.forEach((piece) => addPiece(piece, false));
     // The picture builds left to right: parts not reached yet are faint.
     pieces.classList.toggle('ids', k >= 1);
-    netPanel.classList.toggle('dim', k < 2);
-    outPanel.classList.toggle('dim', k < 3);
-    mm.el.classList.toggle('shown', k === 2);
+    netPanel.classList.toggle('dim', k < 3);
+    outPanel.classList.toggle('dim', k < 4);
+    mm.el.classList.toggle('shown', k === 3);
     hook.classList.remove('shown');
-    // The last step swaps the pipeline for the zoomed-out picture.
-    sentence.hidden = flow.hidden = k === 5;
-    loops.el.hidden = k !== 5;
+    // The map step and the last step swap the pipeline for their own picture.
+    sentence.hidden = flow.hidden = k === 2 || k === 6;
+    map.el.hidden = k !== 2;
+    loops.el.hidden = k !== 6;
 
     if (k === 0) [...pieces.children].forEach((li, i) => (li as HTMLElement).style.setProperty('--d', `${i * 120}ms`));
-    if (k === 2) {
+    if (k === 2) map.play(timers);
+    if (k === 3) {
       net.pulse(timers);
       mm.play(timers);
     }
-    if (k === 3) pass(0);
-    if (k === 4) {
+    if (k === 4) pass(0);
+    if (k === 5) {
       // Madrid won the last pass: it joins the text, and the formula runs again, twice.
       addPiece(PASSES[0]![0]![0], true);
       later(500, () => pass(1, () => addPiece(PASSES[1]![0]![0], true)));
       later(3400, () => pass(2, () => addPiece(PASSES[2]![0]![0], true)));
     }
-    if (k === 5) {
+    if (k === 6) {
       loops.play(timers);
       later(3800, () => hook.classList.add('shown'));
     }
