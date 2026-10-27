@@ -47,3 +47,7 @@ keyboard controls, and the fight, replay, stats, timeline and pose views, with c
 - The model logos in `public/logos/` are copied from JevMan (opper-ai/jevman-benchmark, its `public/logos/`): each is its
   maker's own mark (TypeSafe, Cloudflare, OpenAI, Microsoft, EmpirioLabs, Upright, Convai Innovations, and Jared
   Palmer's avatar for Kev), used to name the model, as on JevMan.
+
+## Session slides
+
+The Archimedes and Isaac Newton illustrations on the eureka slide (`public/session/archimedes.webp`, `public/session/newton.webp`) are by Freepik (freepik.com), used under the Freepik free licence. Their backgrounds were removed.

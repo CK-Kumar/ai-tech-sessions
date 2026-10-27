@@ -75,9 +75,10 @@ export function drawLoop(): Diagram {
   const [llmX, llmY] = point(AT[1]!);
   const [toolsX, toolsY] = point(AT[2]!);
   el.append(
-    box(28, 300, 262, 300, stack),
+    // Taller than the stack needs at first: with TV-sized text, a long card takes two lines.
+    box(28, 280, 262, 340, stack),
     box(toolsX + NODE + 20, toolsY - 92, 250, 190, h('div.tool-box', null, h('p.tool-box-head', null, 'tools = functions'), h('ul.tool-chips', null, ...chips.values()))),
-    box(llmX + NODE + 24, llmY - 70, 430, 150, bubble),
+    box(llmX + NODE + 24, llmY - 78, 430, 166, bubble),
   );
 
   const round = svg('text', { x: CX, y: CY + 34, class: 'agent-sub' }, 'ready');

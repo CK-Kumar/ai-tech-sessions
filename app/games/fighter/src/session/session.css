@@ -23,6 +23,12 @@
   /* The logo bar on every slide; the scenes fill the rest of the screen. */
   --top: 64px;
   --card-shadow: 0 60px 100px -50px rgba(21, 28, 52, 0.31);
+  /* The smallest text the room has to read. On a 43" TV at 1920×1080, 1 px is about 0.5 mm, so 24 px makes letters
+     12 mm tall: readable from about 3 m away. */
+  --t-small: 1.5rem;
+  /* Everything is sized for a 1080 px tall screen (the TV). A shorter window, like the laptop with its browser bars,
+     shrinks all the text in step, so no slide overflows. */
+  font-size: min(16px, 100vh / 67.5);
   font-family: 'Figtree', system-ui, sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -63,13 +69,15 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 /* ---------- the fight scene ---------- */
 
-/* Fight and Hanoi share one layout: panel | board | panel, buttons under the board. The panels use the side space. */
+/* Fight and Hanoi share one layout: panel | board | panel, buttons under the board. The panels use the side space.
+   The panels grow with the screen so their text can be big on a TV; on a wide screen the board then runs out of width
+   before height, so the whole layout sits in the middle instead of leaving a gap at the bottom. */
 .fight, .hanoi {
-  --panel: 270px;
+  --panel: clamp(270px, 19vw, 380px);
   --w: min(calc(100vw - 2 * var(--panel) - 2 * 28px - 64px), calc((100vh - var(--top) - 110px) * 16 / 9));
   display: grid;
   grid-template-columns: minmax(var(--panel), 1fr) var(--w) minmax(var(--panel), 1fr);
-  align-content: start;
+  align-content: center;
   gap: 16px 28px;
   height: calc(100vh - var(--top));
   padding: 8px 32px 24px;
@@ -81,7 +89,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 /* A small switch of options in one pill (e.g. which question to ask). */
 .segs { display: flex; padding: 4px; border-radius: 999px; background: #fff; box-shadow: 0 0 0 1px var(--rule); }
-.seg { border: 0; padding: 7px 16px; border-radius: 999px; background: transparent; color: var(--soft); font: 700 0.95rem 'Bricolage Grotesque', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.seg { border: 0; padding: 8px 18px; border-radius: 999px; background: transparent; color: var(--soft); font: 700 1.2rem 'Bricolage Grotesque', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
 .seg[aria-pressed='true'] { background: var(--ink); color: #fff; }
 .seg:focus-visible { outline: 3px solid var(--periwinkle); outline-offset: 2px; }
 .ctl {
@@ -109,7 +117,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 .bar-top { width: var(--w); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 /* Zenova's headline: dark first, then the rest in blue. */
-.scene-title { margin: 0; font-size: clamp(1.4rem, 2.2vw, 1.9rem); font-weight: 400; color: var(--blue); letter-spacing: -0.01em; }
+.scene-title { margin: 0; font-size: clamp(1.6rem, 2.4vw, 2.4rem); font-weight: 400; color: var(--blue); letter-spacing: -0.01em; }
 .scene-title b { color: var(--ink); font-weight: 700; }
 .controls { display: flex; gap: 10px; }
 
@@ -117,15 +125,18 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .arena canvas { display: block; width: 100%; height: 100%; }
 
 
-.brain, .panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 22px; border-radius: 24px; background: #fff; box-shadow: var(--card-shadow), 0 0 0 1px var(--rule); }
+/* The panels' plain text (waiting, tallies, labels) is 20 px: they sit in a narrow column, and the presenter reads
+   the live details out. */
+.brain, .panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 22px; font-size: 1.25rem; border-radius: 24px; background: #fff; box-shadow: var(--card-shadow), 0 0 0 1px var(--rule); }
 .brain.a { --side: var(--side-a); }
 .brain.b { --side: var(--side-b); }
 
 .who { margin: 0; display: flex; align-items: baseline; gap: 10px; font-size: clamp(1.2rem, 1.45vw, 1.8rem); white-space: nowrap; font-weight: 800; line-height: 1.1; }
 .who::before { content: ''; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--side); }
-.maker { margin: -10px 0 0 24px; color: var(--soft); font-size: 1rem; }
-/* System 1 / System 2: a tag in the side's colour, the one idea the room must take away. */
-.how { margin: 0; align-self: flex-start; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--side) 12%, #fff); color: var(--side); font-weight: 600; font-size: 0.95rem; }
+.maker { margin: -10px 0 0 24px; color: var(--soft); font-size: 1.25rem; }
+/* System 1 / System 2: a tag in the side's colour, the one idea the room must take away. It may wrap on a small
+   screen, so the corners are rounded, not a pill, and the two lines are balanced. */
+.how { margin: 0; align-self: flex-start; padding: 5px 14px; border-radius: 14px; background: color-mix(in srgb, var(--side) 12%, #fff); color: var(--side); font-weight: 700; font-size: 1.35rem; text-wrap: balance; }
 
 /* The thinking clock: the one loud thing on this screen. */
 .clock {
@@ -138,7 +149,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
   color: var(--in-time);
 }
 .clock.late { color: var(--late); }
-.clock-note { margin: 4px 0 0; color: var(--soft); font-size: 0.95rem; }
+.clock-note { margin: 4px 0 0; color: var(--soft); font-size: 1.25rem; }
 
 .mind { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .answer { display: flex; flex-direction: column; gap: 4px; min-height: 4.5rem; justify-content: flex-end; }
@@ -150,16 +161,16 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
   justify-content: space-between;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 1.05rem;
+  font-size: 1.35rem;
   background: linear-gradient(to right, color-mix(in srgb, var(--side) 28%, transparent) var(--p), transparent var(--p));
 }
 .prob .pct { font-variant-numeric: tabular-nums; color: var(--soft); }
-.wrote { margin: 0; font-size: 1.5rem; font-weight: 600; }
+.wrote { margin: 0; font-size: 1.75rem; font-weight: 600; }
 .wrote q { color: var(--side); }
 .wrote.late { color: var(--late); }
 
 /* What the thinking model thought: five lines kept free from the start, so the layout never jumps. */
-.thought { margin: 0; height: 7em; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-height: 1.4; color: var(--soft); font-size: 1rem; }
+.thought { margin: 0; height: 7em; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-height: 1.4; color: var(--soft); font-size: 1.3rem; }
 .thought q { font-style: italic; color: var(--ink); }
 .thought .verdict { font-weight: 700; color: var(--in-time); white-space: nowrap; }
 .thought .verdict.late { color: var(--late); }
@@ -168,7 +179,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 @media (prefers-reduced-motion: reduce) { .thinking-now { animation: none; } }
 
 .tally { display: flex; gap: 18px; margin: 0; color: var(--soft); white-space: nowrap; }
-.tally b { color: var(--ink); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.tally b { color: var(--ink); font-size: 1.45rem; font-variant-numeric: tabular-nums; }
 
 .btn {
   padding: 10px 22px;
@@ -192,7 +203,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 /* The board sits in a white card the size of the fight's arena, so the two slides match. */
 .board-card { aspect-ratio: 16 / 9; display: grid; grid-template-rows: auto 1fr; align-items: center; padding: 22px 28px; border-radius: 24px; background: #fff; box-shadow: var(--card-shadow), 0 0 0 1px var(--rule); }
 .hanoi-board { width: 100%; }
-.board-rule { margin: 0; color: var(--soft); font-size: 1.05rem; }
+.board-rule { margin: 0; color: var(--soft); font-size: clamp(1.3rem, 1.5vw, 1.75rem); }
 .board-rule b { color: var(--ink); }
 .hanoi-board .floor { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
 .hanoi-board .tower { stroke: var(--ink); stroke-width: 8; stroke-linecap: round; }
@@ -202,36 +213,36 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 @media (prefers-reduced-motion: reduce) { .hanoi-board .disk { transition: none; } }
 
 .panel { --side: var(--blue); }
-.panel-head { margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 1.2rem; font-weight: 800; }
-.count-line { margin: 0; display: flex; align-items: baseline; gap: 10px; color: var(--soft); font-size: 1.15rem; }
+.panel-head { margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 1.5rem; font-weight: 800; }
+.count-line { margin: 0; display: flex; align-items: baseline; gap: 10px; color: var(--soft); font-size: 1.35rem; }
 .big-count { font-size: clamp(2.4rem, 4.4vw, 4.2rem); font-weight: 600; line-height: 0.9; color: var(--blue); font-variant-numeric: tabular-nums; }
 .hanoi-status { margin: 0; }
 
 /* contain: size lets the board decide the row's height; the list then scrolls inside the panel instead of growing it. */
 .timeline-panel { contain: size; }
 .thought-list { flex: 1 1 0; min-height: 0; margin: 0; padding: 0; list-style: none; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 14px; }
-.thought-list li { display: grid; grid-template-columns: 1.4rem 1fr; gap: 8px; align-items: start; }
+.thought-list li { display: grid; grid-template-columns: 1.8rem 1fr; gap: 8px; align-items: start; }
 .thought-list .t-empty { display: block; color: var(--soft); }
 .thought-list li.bad .call { color: var(--late); }
 .t-num { color: var(--soft); font-variant-numeric: tabular-nums; padding-top: 2px; }
 .t-body { min-width: 0; }
 /* Small enough that a call breaks only at its spaces, never mid-word. */
-.t-body .call { font-size: 0.82rem; }
-.t-said { margin: 4px 0 0; font-size: 1.05rem; }
-.t-thought { margin: 4px 0 0; color: var(--soft); font-size: 0.95rem; }
+.t-body .call { font-size: 1.2rem; }
+.t-said { margin: 4px 0 0; font-size: 1.35rem; }
+.t-thought { margin: 4px 0 0; color: var(--soft); font-size: 1.2rem; }
 .t-thought b { color: var(--side-b); font-weight: 600; }
-.t-cost { margin: 4px 0 0; color: var(--soft); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.t-cost { margin: 4px 0 0; color: var(--soft); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
 
 /* A tool call, shown exactly as the model sent it. */
 .call { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; color: var(--ink); background: var(--tint); padding: 2px 8px; border-radius: 6px; }
 /* The three tools; the one just called lights up. */
 .tools-box { display: flex; flex-direction: column; gap: 6px; color: var(--soft); }
 .hanoi-tools { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.tool-pill code { display: block; padding: 4px 10px; border-radius: 8px; background: var(--tint); color: var(--soft); font: 0.9rem 'JetBrains Mono', ui-monospace, monospace; transition: background 200ms, color 200ms; }
+.tool-pill code { display: block; padding: 4px 10px; border-radius: 8px; background: var(--tint); color: var(--soft); font: 1.2rem 'JetBrains Mono', ui-monospace, monospace; transition: background 200ms, color 200ms; }
 .tool-pill.used code { background: var(--blue); color: #fff; }
 .tool-pill.bad code { background: var(--late); color: #fff; }
 .last-call { margin: 0; display: flex; flex-direction: column; gap: 6px; color: var(--soft); }
-.last-call .call { align-self: flex-start; font-size: 1.1rem; padding: 6px 12px; }
+.last-call .call { align-self: flex-start; font-size: 1.35rem; padding: 6px 12px; }
 
 /* ---------- the loop scene ---------- */
 
@@ -249,57 +260,58 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .loop-svg { width: 100%; height: 100%; }
 
 .harness-box { fill: color-mix(in srgb, var(--periwinkle) 9%, #fff); stroke: var(--periwinkle); stroke-width: 2; stroke-dasharray: 9 7; }
-.harness-label { font: 700 24px 'Bricolage Grotesque', system-ui, sans-serif; fill: var(--blue); text-anchor: end; }
-.loop-arc { fill: none; stroke: var(--rule); stroke-width: 7; stroke-linecap: round; transition: stroke 200ms; }
+.harness-label { font: 700 26px 'Bricolage Grotesque', system-ui, sans-serif; fill: var(--blue); text-anchor: end; }
+/* Mid grey, not the light rule colour: a TV washes light lines out, and this circle is the picture. */
+.loop-arc { fill: none; stroke: #c5cad6; stroke-width: 7; stroke-linecap: round; transition: stroke 200ms; }
 .loop-arc.on { stroke: var(--blue); }
 .arrow-head { fill: var(--soft); }
-.arc-label { font-size: 18px; fill: var(--soft); text-anchor: middle; }
+.arc-label { font-size: 22px; fill: var(--soft); text-anchor: middle; }
 .loop-node circle { fill: #fff; stroke: var(--ink); stroke-width: 3; transition: fill 200ms, stroke 200ms; }
 /* The LLM is not your code: dark, and outside the box. */
 .loop-node.llm circle { fill: var(--ink); }
 .loop-node text { text-anchor: middle; fill: var(--ink); transition: fill 200ms; }
 .loop-node.llm text { fill: #fff; }
-.node-title { font: 800 25px 'Bricolage Grotesque', system-ui, sans-serif; }
-.node-who { font-size: 16px; opacity: 0.75; }
+.node-title { font: 800 26px 'Bricolage Grotesque', system-ui, sans-serif; }
+.node-who { font-size: 19px; opacity: 0.85; }
 .loop-node.on circle { fill: var(--blue); stroke: var(--blue); }
 .loop-node.on text { fill: #fff; }
 .agent-word { text-anchor: middle; font: 700 58px 'Caveat', cursive; fill: var(--blue); }
-.agent-sub { text-anchor: middle; font-size: 20px; fill: var(--soft); font-variant-numeric: tabular-nums; }
+.agent-sub { text-anchor: middle; font-size: 24px; fill: var(--soft); font-variant-numeric: tabular-nums; }
 .pulse { fill: var(--blue); opacity: 0; filter: drop-shadow(0 0 7px var(--periwinkle)); }
 .pulse.on { opacity: 1; }
 
 /* Beside the LLM: who it is, or what it just said. */
 .bubble { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px; }
-.llm-name { margin: 0; font: 800 26px 'Bricolage Grotesque', system-ui, sans-serif; }
-.llm-note { margin: 0; font-size: 19px; color: var(--soft); }
+.llm-name { margin: 0; font: 800 30px 'Bricolage Grotesque', system-ui, sans-serif; }
+.llm-note { margin: 0; font-size: 22px; color: var(--soft); }
 .bubble.speaking { animation: ctx-in 300ms ease both; }
-.bubble-say { margin: 0; padding: 10px 18px; border-radius: 18px 18px 18px 4px; background: var(--ink); color: #fff; font-size: 21px; }
-.bubble .call { font-size: 19px; color: var(--blue); background: color-mix(in srgb, var(--periwinkle) 22%, #fff); padding: 4px 12px; border-radius: 8px; }
+.bubble-say { margin: 0; padding: 10px 18px; border-radius: 18px 18px 18px 4px; background: var(--ink); color: #fff; font-size: 24px; }
+.bubble .call { font-size: 21px; color: var(--blue); background: color-mix(in srgb, var(--periwinkle) 22%, #fff); padding: 4px 12px; border-radius: 8px; }
 
 /* Beside the tools: the three functions. The picked one lights up, then turns green while it runs. */
 .tool-box { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.tool-box-head { margin: 0; font: 700 17px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); }
+.tool-box-head { margin: 0; font: 700 20px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); }
 .tool-chips { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.tool-chip code { display: inline-block; padding: 6px 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font: 600 19px 'JetBrains Mono', ui-monospace, monospace; color: var(--soft); transition: background 200ms, color 200ms, box-shadow 200ms; }
+.tool-chip code { display: inline-block; padding: 6px 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font: 600 22px 'JetBrains Mono', ui-monospace, monospace; color: var(--soft); transition: background 200ms, color 200ms, box-shadow 200ms; }
 .tool-chip.on code { background: var(--blue); color: #fff; box-shadow: 0 8px 20px -8px rgba(0, 51, 204, 0.6); }
 .tool-chip.run code { background: var(--mint); color: var(--ink); box-shadow: 0 8px 20px -8px rgba(23, 125, 56, 0.5); }
 
 /* Beside the context: what it holds, newest on top. It grows by two cards a round. */
 .ctx-stack { height: 100%; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; justify-content: center; gap: 7px; }
-.ctx-card { padding: 7px 12px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx-card { padding: 7px 12px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font-size: 19px; line-height: 1.25; }
 .ctx-card b { font-weight: 700; color: var(--soft); }
 .ctx-card.llm { background: color-mix(in srgb, var(--periwinkle) 20%, #fff); }
 .ctx-card.result { background: color-mix(in srgb, var(--mint) 50%, #fff); }
 .ctx-card.new { animation: ctx-in 450ms ease both; }
-.ctx-more { padding: 2px 14px; color: var(--soft); font-size: 16px; }
+.ctx-more { padding: 2px 14px; color: var(--soft); font-size: 18px; }
 @keyframes ctx-in { from { opacity: 0; transform: translateY(-10px); } }
 @media (prefers-reduced-motion: reduce) { .ctx-card.new, .bubble.speaking { animation: none; } }
 
 /* The loop as code: six lines, big enough to read from the back of the room. */
 .loop-right { align-self: center; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .code-view { display: flex; flex-direction: column; gap: 4px; padding: 22px 16px; background: var(--ink); }
-.code-head { margin: 0 12px 10px; font: 700 1rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--periwinkle); }
-.code-line { padding: 6px 12px; border-radius: 10px; font: clamp(0.95rem, 1.25vw, 1.3rem)/1.45 'JetBrains Mono', ui-monospace, monospace; color: #c9d3ff; white-space: pre; transition: background 200ms; }
+.code-head { margin: 0 12px 10px; font: 700 1.3rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--periwinkle); }
+.code-line { padding: 6px 12px; border-radius: 10px; font: clamp(1rem, 1.4vw, 1.6rem)/1.45 'JetBrains Mono', ui-monospace, monospace; color: #c9d3ff; white-space: pre; transition: background 200ms; }
 .code-line.on { background: var(--blue); color: #fff; font-weight: 700; }
 .code-line .kw { color: var(--periwinkle); }
 /* The example tool turns green while your code runs it, like its chip in the picture. */
@@ -308,7 +320,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .tool-example.run .code-line, .tool-example.run .kw, .tool-example.run .code-head { color: var(--ink); }
 
 .loop .controls-row, .loop-title { grid-column: 1 / -1; }
-.loop-caption { grid-column: 1 / -1; margin: 0; text-align: center; font: 600 clamp(1.1rem, 1.6vw, 1.5rem) 'Bricolage Grotesque', system-ui, sans-serif; color: var(--ink); }
+.loop-caption { grid-column: 1 / -1; margin: 0; text-align: center; font: 600 clamp(1.3rem, 2vw, 2.1rem) 'Bricolage Grotesque', system-ui, sans-serif; color: var(--ink); }
 
 /* ---------- the tool scene ---------- */
 
@@ -317,10 +329,10 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 /* The four steps, as pills: done ones quiet, the current one blue. */
 .tk-steps { display: flex; flex-wrap: wrap; gap: 10px; }
-.tk-pill { display: flex; align-items: center; gap: 10px; padding: 8px 18px 8px 8px; border-radius: 999px; background: #fff; color: var(--soft); box-shadow: inset 0 0 0 1px var(--rule); font-weight: 600; font-size: 1.05rem; border: 0; cursor: pointer; transition: background 150ms; }
+.tk-pill { display: flex; align-items: center; gap: 10px; padding: 8px 18px 8px 8px; border-radius: 999px; background: #fff; color: var(--soft); box-shadow: inset 0 0 0 1px var(--rule); font-weight: 600; font-size: 1.35rem; border: 0; cursor: pointer; transition: background 150ms; }
 .tk-pill:hover:not(.on) { background: var(--tint); }
 .tk-pill:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
-.tk-num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--tint); font-size: 0.9rem; }
+.tk-num { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tint); font-size: 1.1rem; }
 .tk-pill.done { color: var(--ink); }
 .tk-pill.done .tk-num { background: var(--mint); }
 .tk-pill.on { background: var(--blue-deep); color: #fff; box-shadow: none; }
@@ -328,26 +340,26 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 /* One short example, big enough for the TV. */
 .tk-card { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 22px; padding: 28px 34px; background: #fff; border-radius: 24px; box-shadow: var(--card-shadow), 0 0 0 1px var(--rule); }
-.tk-line { margin: 0; font: 600 clamp(1.4rem, 2.2vw, 2rem)/1.2 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -0.01em; }
+.tk-line { margin: 0; font: 600 clamp(1.6rem, 2.5vw, 2.6rem)/1.2 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -0.01em; }
 
 .tk-head { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
 .tk-asks[hidden] { display: none; }
-.tk-asks-label { align-self: center; padding: 0 8px 0 12px; color: var(--soft); font-weight: 600; }
+.tk-asks-label { align-self: center; padding: 0 8px 0 12px; color: var(--soft); font-weight: 600; font-size: 1.2rem; }
 
 /* The text the model sees, one band per turn. Raw tokens stay visible, dimmer than the words. */
 .tk-doc { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-.tk-band { display: grid; grid-template-columns: minmax(0, 1fr) 10rem; align-items: center; gap: 16px; padding: 10px 18px; border-radius: 14px; background: var(--tint); border-left: 6px solid #c5cad6; }
-.tk-band.has-hit { padding-bottom: 40px; }
+.tk-band { display: grid; grid-template-columns: minmax(0, 1fr) 12.5rem; align-items: center; gap: 16px; padding: 10px 18px; border-radius: 14px; background: var(--tint); border-left: 6px solid #c5cad6; }
+.tk-band.has-hit { padding-bottom: 60px; }
 /* No ligatures: <|im_start|> must look exactly like the real token. */
-.tk-band-text { font: clamp(1rem, 1.35vw, 1.3rem)/1.6 'JetBrains Mono', ui-monospace, monospace; font-variant-ligatures: none; color: var(--ink); }
+.tk-band-text { font: clamp(1.1rem, 1.45vw, 1.8rem)/1.6 'JetBrains Mono', ui-monospace, monospace; font-variant-ligatures: none; color: var(--ink); }
 .tk-ln { white-space: pre-wrap; min-height: 1.6em; }
 /* The template's own tokens: raw, but in a warm colour of their own so the turns are easy to see. */
 .tk-mark { padding: 0 3px; border-radius: 5px; background: color-mix(in srgb, var(--side-a) 14%, #fff); color: #b4531f; font-weight: 600; }
 .tk-role { font-weight: 800; color: var(--ink); }
 /* After the tool call: what your code does next, quietly. */
-.tk-after { margin: 4px 0 0; color: var(--soft); font-size: 1.15rem; opacity: 0; transition: opacity 500ms ease; }
+.tk-after { margin: 4px 0 0; color: var(--soft); font-size: var(--t-small); opacity: 0; transition: opacity 500ms ease; }
 .tk-after.shown { opacity: 1; }
-.tk-who { justify-self: end; font: 700 1.05rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); }
+.tk-who { justify-self: end; text-align: right; font: 700 var(--t-small) 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); }
 
 /* Colour = who wrote it, the same on every tab: blue the model, light blue you, grey the tools. */
 .tk-band.k-plain { background: #fff; box-shadow: inset 0 0 0 1px var(--rule); border-left-color: var(--rule); }
@@ -372,7 +384,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
   border-radius: 999px;
   background: var(--ink);
   color: #fff;
-  font: 600 0.72em/1.4 'Figtree', system-ui, sans-serif;
+  font: 600 var(--t-small)/1.4 'Figtree', system-ui, sans-serif;
   white-space: nowrap;
   animation: tk-note-in 400ms ease both;
 }
@@ -385,25 +397,25 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 /* One picture, top to bottom: text → pieces → the model → scores, and an arrow back up for the winner. */
 .nn-card { gap: 14px; }
-.nn-pipe { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 16px; }
+.nn-pipe { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 16px; }
 .nn-rows { display: flex; flex-direction: column; justify-content: flex-start; gap: 10px; padding-top: 8px; }
-.nn-row { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: center; gap: 16px; opacity: 0; transition: opacity 400ms ease; }
+.nn-row { display: grid; grid-template-columns: 9rem minmax(0, 1fr); align-items: center; gap: 16px; opacity: 0; transition: opacity 400ms ease; }
 .nn-row.shown { opacity: 1; }
-.nn-label { font: 700 1.05rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); text-align: right; }
+.nn-label { font: 700 var(--t-small) 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); text-align: right; }
 
-.nn-text-row { margin: 0; font-size: clamp(1.5rem, 2.5vw, 2.4rem); line-height: 1.2; white-space: pre; }
+.nn-text-row { margin: 0; font-size: clamp(1.6rem, 2.8vw, 3rem); line-height: 1.2; white-space: pre; }
 .nn-new { color: var(--blue); font-weight: 700; }
 .nn-cursor { color: var(--blue); animation: tk-blink 1s steps(1) infinite; }
 
 /* A chip per piece, its number under it. Pieces of one word sit together, so "cap|ital" reads as one word cut in two. */
 .nn-pieces { display: flex; flex-wrap: wrap; gap: 12px 14px; }
 /* Room under a row only when a callout sits there. */
-.nn-pieces:has(.tk-hit), .nn-scores:has(.tk-hit) { padding-bottom: 30px; }
+.nn-pieces:has(.tk-hit), .nn-scores:has(.tk-hit) { padding-bottom: 52px; }
 .nn-word { display: inline-flex; gap: 3px; }
 .nn-chip { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 16px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); animation: nn-in 350ms ease both; animation-delay: var(--d, 0ms); }
 .nn-chip.new { background: color-mix(in srgb, var(--periwinkle) 22%, #fff); }
-.nn-piece { font: 600 clamp(1.2rem, 1.9vw, 1.7rem) 'JetBrains Mono', ui-monospace, monospace; font-variant-ligatures: none; }
-.nn-id { font: clamp(0.95rem, 1.3vw, 1.2rem) 'JetBrains Mono', ui-monospace, monospace; color: var(--blue); font-variant-numeric: tabular-nums; visibility: hidden; }
+.nn-piece { font: 600 clamp(1.3rem, 2vw, 2.1rem) 'JetBrains Mono', ui-monospace, monospace; font-variant-ligatures: none; }
+.nn-id { font: clamp(1.1rem, 1.4vw, 1.5rem) 'JetBrains Mono', ui-monospace, monospace; color: var(--blue); font-variant-numeric: tabular-nums; visibility: hidden; }
 .nn-pieces.ids .nn-id { visibility: visible; }
 @keyframes nn-in { from { opacity: 0; transform: translateY(6px); } }
 
@@ -414,21 +426,22 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 
 /* One layer, as a matrix: the row being worked out lights up, with the same neuron in the network. */
 .matmul { display: flex; flex-direction: column; gap: 10px; }
-.mm-head { margin: 0; font: 700 1.1rem 'Bricolage Grotesque', system-ui, sans-serif; }
+.mm-head { margin: 0; font: 700 1.4rem 'Bricolage Grotesque', system-ui, sans-serif; }
 .mm-row { display: flex; align-items: center; gap: 14px; }
 .mm-block { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .mm-grid { display: grid; gap: 4px; padding: 6px; border-left: 2px solid var(--ink); border-right: 2px solid var(--ink); border-radius: 6px; }
 .mm-grid.w { grid-template-columns: repeat(3, auto); }
 .mm-grid.v { grid-template-columns: auto; }
-.mm-cell { min-width: 3.4rem; padding: 4px 8px; text-align: center; border-radius: 6px; font: clamp(1rem, 1.3vw, 1.25rem) 'JetBrains Mono', ui-monospace, monospace; transition: background 200ms; }
+.mm-cell { min-width: 3.1em; padding: 4px 8px; text-align: center; border-radius: 6px; font: clamp(1.1rem, 1.4vw, 1.5rem) 'JetBrains Mono', ui-monospace, monospace; transition: background 200ms; }
 .mm-cell.on { background: color-mix(in srgb, var(--periwinkle) 35%, #fff); }
 .mm-cell.out { color: var(--blue); font-weight: 700; }
-.mm-label { color: var(--soft); font-size: 0.9rem; }
-.mm-op { font-size: 1.8rem; color: var(--soft); }
-.mm-sum { margin: 0; min-height: 1.5em; font: 600 clamp(1rem, 1.3vw, 1.2rem) 'JetBrains Mono', ui-monospace, monospace; color: var(--blue); white-space: pre; }
-.nn-run { font: 700 1rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--blue); min-height: 1.3em; }
-.net-svg { width: 100%; height: auto; }
-.net-edge { stroke: var(--rule); stroke-width: 1.2; transition: stroke 200ms; }
+.mm-label { color: var(--soft); font-size: 1.35rem; }
+.mm-op { font-size: 2.2rem; color: var(--soft); }
+.mm-sum { margin: 0; min-height: 1.5em; font: 600 clamp(1.1rem, 1.4vw, 1.5rem) 'JetBrains Mono', ui-monospace, monospace; color: var(--blue); white-space: pre; }
+.nn-run { font: 700 1.35rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--blue); min-height: 1.3em; }
+/* overflow: visible, so "numbers in" under the first column is not cut at the left edge. */
+.net-svg { width: 100%; height: auto; overflow: visible; }
+.net-edge { stroke: #c5cad6; stroke-width: 1.5; transition: stroke 200ms; }
 .net-edge.on { stroke: var(--periwinkle); stroke-width: 1.6; }
 .net-node { fill: #fff; stroke: var(--ink); stroke-width: 2; transition: fill 200ms; }
 .net-node.on { fill: var(--blue); }
@@ -436,11 +449,11 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .net-node.focus { stroke: var(--blue); stroke-width: 4; }
 .net-edge.focus { stroke: var(--blue); stroke-width: 3; }
 .net-layers { fill: none; stroke: var(--periwinkle); stroke-width: 1.5; stroke-dasharray: 6 6; }
-.net-label { font-size: 17px; fill: var(--soft); text-anchor: middle; }
+.net-label { font-size: 21px; fill: var(--soft); text-anchor: middle; }
 
 /* The scores: one chip per likely piece, filled to its score. The winner turns mint. */
 .nn-scores { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px; min-height: 3rem; }
-.nn-score { display: flex; gap: 14px; align-items: baseline; padding: 9px 16px; font-size: 1.2rem; border-radius: 10px; background: linear-gradient(to right, color-mix(in srgb, var(--periwinkle) 30%, #fff) var(--p), var(--tint) var(--p)); animation: nn-in 350ms ease both; }
+.nn-score { display: flex; gap: 14px; align-items: baseline; padding: 9px 16px; font-size: var(--t-small); border-radius: 10px; background: linear-gradient(to right, color-mix(in srgb, var(--periwinkle) 30%, #fff) var(--p), var(--tint) var(--p)); animation: nn-in 350ms ease both; }
 .nn-pct { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--soft); }
 .nn-score.top { background: linear-gradient(to right, var(--mint) var(--p), var(--tint) var(--p)); box-shadow: inset 0 0 0 2px #177d38; }
 .nn-score.top .nn-pct { color: #177d38; }
@@ -449,7 +462,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .nn-back { position: relative; margin: 26px 0 40px; border: 3px solid var(--rule); border-left: 0; border-radius: 0 28px 28px 0; display: flex; align-items: center; justify-content: center; opacity: 0.0; transition: opacity 400ms, border-color 400ms; }
 .nn-back::before { content: ''; position: absolute; top: -10px; left: -6px; border: 8px solid transparent; border-right: 12px solid var(--blue); }
 .nn-back.shown { opacity: 1; border-color: var(--blue); }
-.nn-back span { padding: 0 10px; text-align: center; font: 700 0.95rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--blue); }
+.nn-back span { padding: 0 10px; text-align: center; font: 700 1.35rem 'Bricolage Grotesque', system-ui, sans-serif; color: var(--blue); }
 .tk-line.nn-hook { color: var(--blue); }
 @media (prefers-reduced-motion: reduce) { .nn-chip, .nn-score { animation: none; } .nn-cursor { animation: none; } }
 
@@ -463,21 +476,61 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .why-pillar { display: flex; flex-direction: column; gap: 14px; padding: 28px; border-radius: 24px; background: #fff; box-shadow: var(--card-shadow), 0 0 0 1px var(--rule); border-top: 8px solid var(--blue); animation: why-in 450ms both; animation-delay: calc(var(--k) * 250ms); }
 .why-pillar:nth-child(2) { border-top-color: var(--periwinkle); }
 .why-pillar:nth-child(3) { border-top-color: #5fae7a; }
-.why-num { margin: 0; color: var(--soft); font: 700 1.1rem 'Bricolage Grotesque', system-ui, sans-serif; }
+.why-num { margin: 0; color: var(--soft); font: 700 1.4rem 'Bricolage Grotesque', system-ui, sans-serif; }
 .why-word { margin: -8px 0 0; font: 800 clamp(2.6rem, 4.6vw, 4.4rem)/1 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -0.02em; color: var(--blue-deep); }
-.why-sub { margin: 0; font-size: clamp(1.1rem, 1.5vw, 1.35rem); line-height: 1.35; }
+.why-sub { margin: 0; font-size: clamp(1.3rem, 1.7vw, 1.75rem); line-height: 1.35; }
 .why-chips { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
 /* In Build, the first choice comes first: which tool for the job. */
 .why-pillar:nth-child(2) .why-chips li:first-child { background: color-mix(in srgb, var(--periwinkle) 25%, #fff); }
-.why-chips li { padding: 8px 16px; border-radius: 999px; background: var(--tint); font-size: clamp(1rem, 1.35vw, 1.25rem); font-weight: 600; }
+.why-chips li { padding: 8px 16px; border-radius: 999px; background: var(--tint); font-size: clamp(1.15rem, 1.4vw, 1.5rem); font-weight: 600; }
 
 /* Tools as dark chips, so "Use" reads as a toolbox. */
 .why-chips.tools li { background: var(--ink); color: #fff; }
 /* The line under the three cards: the sessions are not only about AI. */
-.why-ask-line { margin: 4px auto 0; max-width: 82ch; text-align: center; line-height: 1.4; font-size: clamp(1.15rem, 1.7vw, 1.55rem); color: var(--soft); animation: why-in 450ms 900ms both; }
+.why-ask-line { margin: 4px auto 0; max-width: 82ch; text-align: center; line-height: 1.4; font-size: clamp(1.3rem, 2vw, 2.1rem); color: var(--soft); animation: why-in 450ms 900ms both; }
 .why-ask-line b { color: var(--blue-deep); font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
 .why-first { font-size: 0.85em; }
 @media (prefers-reduced-motion: reduce) { .why-pillar, .why-ask-line { animation: none; } }
+
+/* ---------- eureka: the opening, a dictionary entry beside Archimedes and Newton ---------- */
+
+.ek-card { flex-direction: row; align-items: center; gap: 4%; padding: 40px 64px; position: relative; }
+.ek-entry { flex: 1; min-width: 0; }
+.ek-word { margin: 0; font: 800 clamp(5rem, 9.5vw, 9.5rem)/1 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -0.03em; }
+.ek-dot { color: var(--blue); padding: 0 0.03em; }
+.ek-say { margin: 14px 0 0; font-size: clamp(1.4rem, 2vw, 2rem); color: var(--soft); }
+.ek-say i { margin-left: 18px; }
+/* A short blue bar, the Zenova accent, between the word and its meaning. */
+.ek-bar { width: 72px; height: 5px; margin: 34px 0 26px; border-radius: 3px; background: var(--blue); }
+.ek-from { margin: 0; font-size: clamp(1.3rem, 1.8vw, 1.8rem); color: var(--soft); }
+.ek-greek { color: var(--ink); font-weight: 600; }
+.ek-means { margin: 10px 0 0; font: 700 clamp(2.2rem, 3.8vw, 3.6rem)/1.15 'Bricolage Grotesque', system-ui, sans-serif; color: var(--blue); }
+
+/* The two pictures, oldest first, each on a soft circle in the Zenova glow colours: a step up from left to right. */
+.ek-pics { flex: 1.1; align-self: stretch; display: flex; align-items: center; justify-content: center; gap: 2%; }
+/* The circle is drawn behind the picture, not clipped into it, so Archimedes' "Eureka!" can stick out of it. */
+.ek-pic { position: relative; margin: 0; width: min(40vh, 22vw); text-align: center; }
+.ek-pic::before { content: ''; position: absolute; inset: 0 0 auto; aspect-ratio: 1; border-radius: 50%; background: var(--disc); }
+.ek-pic img { position: relative; display: block; width: 100%; aspect-ratio: 1; object-fit: contain; }
+.ek-archimedes { --disc: #ddfbe5; transform: translateY(16%); }
+.ek-newton { --disc: #e4eaff; transform: translateY(-16%); }
+.ek-pic figcaption { position: relative; }
+.ek-pic figcaption { margin-top: 16px; font-weight: 600; font-size: clamp(1.2rem, 1.5vw, 1.6rem); }
+.ek-pic figcaption span { display: block; font-weight: 400; color: var(--soft); }
+
+/* ---------- System 1 and System 2: one card, two halves ---------- */
+
+/* Mint for the fast one, Zenova blue for the slow one, as on the fight slide. */
+.ts-card { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; border-radius: 24px; overflow: hidden; box-shadow: var(--card-shadow), 0 0 0 1px var(--rule); }
+.ts-half { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+.ts-half.one { background: #e6fdec; color: var(--ink); --line: var(--ink); }
+.ts-half.two { background: var(--blue-deep); color: #fff; --line: #fff; }
+.ts-label { margin: 0; font: 600 clamp(1.6rem, 2.4vw, 2.4rem) 'Bricolage Grotesque', system-ui, sans-serif; opacity: 0.7; }
+.ts-num { margin: 0; font: 800 clamp(10rem, 22vw, 20rem)/0.95 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -0.04em; }
+.ts-how { margin: 10px 0 0; font-size: clamp(1.5rem, 2.2vw, 2.2rem); opacity: 0.8; }
+.ts-path { width: min(260px, 60%); margin-top: 44px; overflow: visible; }
+.ts-line { fill: none; stroke: var(--line); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; }
+.ts-stop { fill: var(--line); }
 
 /* ---------- the end: the knowledge-sharing title slide, like the Zenova deck cover ---------- */
 
@@ -485,7 +538,7 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .end-cover { height: 100%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr); gap: 48px; align-items: center; padding: 48px 56px; border-radius: 24px; background: var(--blue-deep); color: #fff; overflow: hidden; }
 .end-left { height: 100%; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
 .end-mark { margin: 0; font: 800 clamp(1.6rem, 2.6vw, 2.4rem) 'Bricolage Grotesque', system-ui, sans-serif; }
-.end-pill { display: inline-block; padding: 6px 22px; border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 1.2rem; }
+.end-pill { display: inline-block; padding: 6px 22px; border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 1.6rem; }
 .end-title { margin: 20px 0 0; font: 700 clamp(2.6rem, 5vw, 4.8rem)/1.05 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -0.02em; }
 /* The photo fits the cover's height, so the title is never pushed off the screen. */
 .end-photo { justify-self: end; height: 100%; width: auto; max-width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 28px; }
@@ -494,6 +547,9 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
   .loop { grid-template-columns: 1fr; height: auto; padding: 16px; }
   .tool-scene { height: auto; padding: 16px; }
   .why-pillars { grid-template-columns: 1fr; }
+  .ts-card { grid-template-columns: 1fr; }
+  .ek-card { flex-direction: column; padding: 28px; }
+  .ek-pic { width: 40vw; }
   .end { height: auto; padding: 16px; }
   .end-cover { grid-template-columns: 1fr; padding: 28px; }
   .hanoi { --w: 100%; grid-template-columns: 1fr; height: auto; padding: 16px; }

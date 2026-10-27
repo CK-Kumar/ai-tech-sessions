@@ -3,8 +3,10 @@
 // previous scene. There is no menu, so the room never sees what comes next.
 // ?left=<model id>&right=<model id> picks the fighters (default: Jev, fast, against Claude Haiku, thinking).
 import { h } from '../dom.ts';
+import { eurekaScene } from './eureka.ts';
 import { fightScene } from './fight.ts';
 import { hanoiScene } from './hanoi.ts';
+import { thinkingScene } from './thinking.ts';
 import { loopScene } from './loop.ts';
 import { networkScene } from './network.ts';
 import { whyScene } from './why.ts';
@@ -30,8 +32,10 @@ const left = params.get('left') ?? 'typesafe/jev-1.14.0';
 const right = params.get('right') ?? 'anthropic/claude-haiku-5-5';
 
 const SCENES: Scene[] = [
+  { id: 'eureka', mount: eurekaScene },
   { id: 'fight', mount: (host) => fightScene(host, left, right) },
   { id: 'hanoi', mount: hanoiScene },
+  { id: 'thinking', mount: thinkingScene },
   { id: 'loop', mount: loopScene },
   { id: 'tool', mount: toolScene },
   { id: 'model', mount: networkScene },
