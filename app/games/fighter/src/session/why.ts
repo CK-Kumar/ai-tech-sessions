@@ -10,7 +10,7 @@ const PILLARS = [
     tools: ['Claude Code', 'Codex', 'Cursor', 'Gemini CLI', 'ChatGPT'],
     topics: ['context & prompts', 'skills & MCP', 'background agents'],
   },
-  { word: 'Build', line: 'Our own harness, inside Zenova.', topics: ['LLM, classic ML, or plain code?', 'RAG', 'agent loops', 'harness engineering', 'guardrails', 'evals', 'open-weight models', 'inference engineering & cost'] },
+  { word: 'Build', line: 'Our own harness, inside Zenova.', topics: ['LLM, classic ML, or plain code?', 'RAG', 'agent loops', 'harness engineering', 'guardrails', 'evals', 'open-weight models', 'model quantization', 'inference engineering & cost'] },
   { word: 'Trust', line: 'Where AI fails, and how to stay safe.', topics: ['hallucinations', 'prompt injection', 'agent permissions', 'data privacy', 'bias', 'EU AI Act', 'AI literacy'] },
 ];
 

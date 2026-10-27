@@ -265,45 +265,48 @@ h1, h2, .scene-title, .btn, .who, .clock, .big-count, .ctx-count, .wrote, .card-
 .loop-arc { fill: none; stroke: #c5cad6; stroke-width: 7; stroke-linecap: round; transition: stroke 200ms; }
 .loop-arc.on { stroke: var(--blue); }
 .arrow-head { fill: var(--soft); }
-.arc-label { font-size: 22px; fill: var(--soft); text-anchor: middle; }
+/* The labels in the picture are dark, not grey: on a TV, grey text on white fades out. */
+.arc-label { font-size: 22px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
 .loop-node circle { fill: #fff; stroke: var(--ink); stroke-width: 3; transition: fill 200ms, stroke 200ms; }
 /* The LLM is not your code: dark, and outside the box. */
 .loop-node.llm circle { fill: var(--ink); }
 .loop-node text { text-anchor: middle; fill: var(--ink); transition: fill 200ms; }
 .loop-node.llm text { fill: #fff; }
 .node-title { font: 800 26px 'Bricolage Grotesque', system-ui, sans-serif; }
-.node-who { font-size: 19px; opacity: 0.85; }
+.node-who { font-size: 19px; }
 .loop-node.on circle { fill: var(--blue); stroke: var(--blue); }
 .loop-node.on text { fill: #fff; }
 .agent-word { text-anchor: middle; font: 700 58px 'Caveat', cursive; fill: var(--blue); }
-.agent-sub { text-anchor: middle; font-size: 24px; fill: var(--soft); font-variant-numeric: tabular-nums; }
+.agent-sub { text-anchor: middle; font-size: 24px; font-weight: 600; fill: var(--ink); font-variant-numeric: tabular-nums; }
 .pulse { fill: var(--blue); opacity: 0; filter: drop-shadow(0 0 7px var(--periwinkle)); }
 .pulse.on { opacity: 1; }
 
 /* Beside the LLM: who it is, or what it just said. */
 .bubble { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px; }
 .llm-name { margin: 0; font: 800 30px 'Bricolage Grotesque', system-ui, sans-serif; }
-.llm-note { margin: 0; font-size: 22px; color: var(--soft); }
+.llm-note { margin: 0; font-size: 22px; color: var(--ink); }
 .bubble.speaking { animation: ctx-in 300ms ease both; }
 .bubble-say { margin: 0; padding: 10px 18px; border-radius: 18px 18px 18px 4px; background: var(--ink); color: #fff; font-size: 24px; }
 .bubble .call { font-size: 21px; color: var(--blue); background: color-mix(in srgb, var(--periwinkle) 22%, #fff); padding: 4px 12px; border-radius: 8px; }
 
 /* Beside the tools: the three functions. The picked one lights up, then turns green while it runs. */
 .tool-box { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.tool-box-head { margin: 0; font: 700 20px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--soft); }
+.tool-box-head { margin: 0; font: 700 20px 'Bricolage Grotesque', system-ui, sans-serif; color: var(--ink); }
 .tool-chips { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.tool-chip code { display: inline-block; padding: 6px 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font: 600 22px 'JetBrains Mono', ui-monospace, monospace; color: var(--soft); transition: background 200ms, color 200ms, box-shadow 200ms; }
+.tool-chip code { display: inline-block; padding: 6px 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font: 600 22px 'JetBrains Mono', ui-monospace, monospace; color: var(--ink); transition: background 200ms, color 200ms, box-shadow 200ms; }
 .tool-chip.on code { background: var(--blue); color: #fff; box-shadow: 0 8px 20px -8px rgba(0, 51, 204, 0.6); }
 .tool-chip.run code { background: var(--mint); color: var(--ink); box-shadow: 0 8px 20px -8px rgba(23, 125, 56, 0.5); }
 
 /* Beside the context: what it holds, newest on top. It grows by two cards a round. */
 .ctx-stack { height: 100%; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; justify-content: center; gap: 7px; }
-.ctx-card { padding: 7px 12px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font-size: 19px; line-height: 1.25; }
-.ctx-card b { font-weight: 700; color: var(--soft); }
+.ctx-card { padding: 7px 12px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1.5px var(--rule); font-size: 19px; line-height: 1.25; transition: box-shadow 200ms; }
+.ctx-card b { font-weight: 800; color: var(--ink); }
 .ctx-card.llm { background: color-mix(in srgb, var(--periwinkle) 20%, #fff); }
 .ctx-card.result { background: color-mix(in srgb, var(--mint) 50%, #fff); }
 .ctx-card.new { animation: ctx-in 450ms ease both; }
-.ctx-more { padding: 2px 14px; color: var(--soft); font-size: 18px; }
+.ctx-more { padding: 2px 14px; color: var(--ink); font-size: 18px; font-weight: 600; transition: box-shadow 200ms; border-radius: 12px; }
+/* While your code sends the context, all of it lights up: the whole list goes to the LLM, every round. */
+.ctx-stack.sending .ctx-card, .ctx-stack.sending .ctx-more { box-shadow: 0 0 0 3px var(--blue); }
 @keyframes ctx-in { from { opacity: 0; transform: translateY(-10px); } }
 @media (prefers-reduced-motion: reduce) { .ctx-card.new, .bubble.speaking { animation: none; } }
 

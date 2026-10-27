@@ -35,6 +35,26 @@ export const STEPS: Step[] = ROUNDS.flatMap((r, round): Step[] =>
   r.tool ? (['send', 'reply', 'run', 'remember'] as const).map((stage) => ({ round, stage })) : [{ round, stage: 'send' }, { round, stage: 'reply' }, { round, stage: 'stop' }],
 );
 
+/** One press of Next: the step it shows. 31 steps are too many to click through in front of a room, so round 1 goes
+ * stop by stop, round 2 shows the context sent again, one press jumps over rounds 3 to 7, then the loop ends. */
+export interface Click {
+  step: number;
+  say?: string; // a sentence of its own, instead of the step's caption
+}
+const at = (round: number, stage: Stage) => STEPS.findIndex((s) => s.round === round && s.stage === stage);
+export const CLICKS: Click[] = [
+  { step: at(0, 'send') },
+  { step: at(0, 'reply') },
+  { step: at(0, 'run') },
+  { step: at(0, 'remember') },
+  { step: at(1, 'send') },
+  { step: at(1, 'reply') },
+  { step: at(1, 'remember') },
+  { step: at(6, 'remember'), say: 'Rounds 3 to 7: the same loop. The context keeps growing.' },
+  { step: at(7, 'reply') },
+  { step: at(7, 'stop') },
+];
+
 export const call = (r: Round) => `${r.tool}(disk: ${r.disk})`;
 
 /** The whole agent in code. `stage` lights the line in step with the circle. */

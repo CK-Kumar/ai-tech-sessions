@@ -4,9 +4,9 @@
 // Scripted: no API calls.
 import { h } from '../dom.ts';
 import type { Mounted } from './main.ts';
-import { control, NEXT, PAUSE, PLAY, RESTART } from './controls.ts';
+import { control, PAUSE, PLAY, RESTART } from './controls.ts';
 import { drawLoop, runPulse } from './loop-draw.ts';
-import { call, caption, CODE, ROUNDS, STEPS, type Round, type Stage } from './loop-script.ts';
+import { call, caption, CLICKS, CODE, ROUNDS, STEPS, type Round, type Stage } from './loop-script.ts';
 
 const PLAY_MS = 1400;
 const SHOWN_CARDS = 5; // the context stack shows the newest few; the rest is a "+N earlier" pill
@@ -44,18 +44,16 @@ export function loopScene(host: HTMLElement): Mounted {
   );
 
   const say = h('p.loop-caption');
-  const next = control('primary', NEXT, 'Next step');
   const play = control('quiet', PLAY, 'Play');
   const reset = control('quiet', RESTART, 'Start over');
-  host.replaceChildren(h('div.loop', null, h('p.scene-title.loop-title', null, h('b', null, 'LLM + harness = agent.'), ' The brain, plus a body to act.'), h('div.loop-card', null, d.el), h('div.loop-right', null, codeCard, toolCard), say, h('div.controls-row', null, next.el, play.el, reset.el)));
+  host.replaceChildren(h('div.loop', null, h('p.scene-title.loop-title', null, h('b', null, 'LLM + harness = agent.'), ' The brain, plus a body to act.'), h('div.loop-card', null, d.el), h('div.loop-right', null, codeCard, toolCard), say, h('div.controls-row', null, play.el, reset.el)));
 
-  let at = -1;
-  let timer = 0;
+  let click = -1; // the press of Next on screen (-1 = the start)
+  let timer = 0; // Play
   let stopPulse = () => {};
 
   /** Draws step `i` from scratch (-1 = before the first step), so any step can be shown on its own. */
-  function show(i: number, animate: boolean): void {
-    at = i;
+  function show(i: number, animate: boolean, said?: string): void {
     const s = STEPS[i];
     const r = s ? ROUNDS[s.round]! : null;
     const done = s?.stage === 'reply' && !r?.tool; // a reply with no tool call: nothing goes to the tools
@@ -88,6 +86,8 @@ export function loopScene(host: HTMLElement): Mounted {
       if (STEPS.findIndex((st) => st.round === k && (st.stage === 'remember' || st.stage === 'stop')) <= i) cards.push(...written(round));
     });
     const grew = animate && (s?.stage === 'remember' || s?.stage === 'stop');
+    // Sending: all of it lights up, because all of it goes to the LLM again, every round.
+    d.stack.classList.toggle('sending', s?.stage === 'send');
     const newest = cards.slice(-SHOWN_CARDS).reverse();
     d.stack.replaceChildren(
       ...newest.map((c, k) => h(`li.ctx-card.${c.kind}${grew && k < (s?.stage === 'stop' ? 1 : 2) ? '.new' : ''}`, null, h('b', null, c.who), ' ', c.text)),
@@ -102,42 +102,54 @@ export function loopScene(host: HTMLElement): Mounted {
     toolTower.textContent = tool.slice(-1);
     toolCard.classList.toggle('run', s?.stage === 'run');
 
-    say.textContent = s ? caption(s) : 'The context starts with only the task. Press Next step.';
-    const end = i >= STEPS.length - 1;
-    next.el.disabled = end;
-    if (end) stopPlaying();
+    say.textContent = said ?? (s ? caption(s) : 'The context starts with only the task.');
+    // No Next button: the clicker (→ or Space) moves on.
+    if (i >= STEPS.length - 1) stopPlaying();
   }
 
   function stopPlaying(): void {
-    clearInterval(timer);
+    clearTimeout(timer);
     timer = 0;
     play.set(PLAY, 'Play');
   }
 
-  next.el.addEventListener('click', () => show(at + 1, true));
+  /** Shows press `k` (-1 = the start). */
+  function go(k: number, animate: boolean): void {
+    click = k;
+    const c = CLICKS[k];
+    if (!c) return show(-1, false);
+    show(c.step, animate, c.say);
+  }
+
+  /** Play: one press after another. */
+  function playNext(): void {
+    go(click + 1, true);
+    if (click >= CLICKS.length - 1) return stopPlaying();
+    timer = window.setTimeout(playNext, PLAY_MS);
+  }
+
   play.el.addEventListener('click', () => {
     if (timer) return stopPlaying();
-    if (at >= STEPS.length - 1) show(-1, false);
+    if (click >= CLICKS.length - 1) go(-1, false);
     play.set(PAUSE, 'Pause');
-    show(at + 1, true);
-    timer = window.setInterval(() => show(at + 1, true), PLAY_MS);
+    playNext();
   });
   reset.el.addEventListener('click', () => {
     stopPlaying();
-    show(-1, false);
+    go(-1, false);
   });
-  show(-1, false);
+  go(-1, false);
   return {
     stop: () => {
       stopPlaying();
       stopPulse();
     },
-    // The arrow keys: one step forward or back. False at either end, so the app moves to the next or previous slide.
+    // The arrow keys: one press forward or back. False at either end, so the app moves to the next or previous slide.
     step: (by) => {
-      const k = at + by;
-      if (k < -1 || k > STEPS.length - 1) return false;
+      const k = click + by;
+      if (k < -1 || k > CLICKS.length - 1) return false;
       stopPlaying();
-      show(k, by > 0);
+      go(k, by > 0);
       return true;
     },
   };
