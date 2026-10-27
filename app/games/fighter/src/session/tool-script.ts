@@ -45,7 +45,8 @@ export function steps(q: Question): Step[] {
   };
   const you: Band = { kind: 'you', label: 'you', lines: given('<|im_start|>user', `${q.ask}<|im_end|>`) };
   const args = `"a": ${q.a}, "b": ${q.b}`;
-  const call = `<tool_call>{"name": "⟦${q.tool}|picks a tool⟧", "arguments": {⟦${args}|fills in the numbers⟧}}</tool_call><|im_end|>`;
+  // Like <|im_end|> on the chat tab: the <tool_call> tags are part of the template it was trained on.
+  const call = `⟦<tool_call>|learned in training⟧{"name": "⟦${q.tool}|picks a tool⟧", "arguments": {${args}}}</tool_call><|im_end|>`;
   return [
     {
       name: 'Base model',
@@ -80,7 +81,7 @@ export function steps(q: Question): Step[] {
     },
     {
       name: 'Tool call',
-      line: 'It picks a tool. As text.',
+      line: 'Trained on tool calls too, in the same template.',
       bands: [tools, you, { kind: 'model', label: 'model', lines: [{ text: '<|im_start|>assistant', by: 'given' }, { text: call, by: 'model' }] }],
       asks: true,
       after: `Next: your code runs ${q.tool}(${q.a}, ${q.b}) → ${q.result}, and adds it to the context.`,

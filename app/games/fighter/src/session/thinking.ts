@@ -5,7 +5,7 @@ import { h } from '../dom.ts';
 import type { Mounted } from './main.ts';
 import { svg } from './svg.ts';
 
-/** A line from start to answer, with an arrow head: straight for System 1, in steps for System 2. */
+/** A line from start to answer: straight for System 1, in steps for System 2. */
 function path(points: string, stops: number[][]): SVGElement {
   const el = svg('svg', { viewBox: '0 0 260 80', class: 'ts-path', 'aria-hidden': 'true' });
   el.append(svg('polyline', { points, class: 'ts-line' }));
@@ -20,7 +20,7 @@ export function thinkingScene(host: HTMLElement): Mounted {
   const fast = path('14,40 246,40', [[14, 40], [246, 40]]);
   const slow = path('14,64 72,64 72,40 130,40 130,16 188,16 188,40 246,40', [[14, 64], [72, 40], [130, 16], [188, 40], [246, 40]]);
   host.replaceChildren(
-    h('div.tool-scene', null, h('section.ts-card', null, half('one', '1', 'fast · automatic', fast), half('two', '2', 'slow · effortful', slow))),
+    h('div.tool-scene', null, h('section.ts-card', null, half('one', '1', 'intuition · answers at once', fast), half('two', '2', 'reasoning · thinks first', slow))),
   );
   return { stop: () => {} };
 }

@@ -8,10 +8,10 @@ const PILLARS = [
     word: 'Use',
     line: 'Agentic tools, used like a pro.',
     tools: ['Claude Code', 'Codex', 'Cursor', 'Gemini CLI', 'ChatGPT'],
-    topics: ['context & prompts', 'skills & MCP', 'reviewing AI code'],
+    topics: ['context & prompts', 'skills & MCP', 'background agents'],
   },
-  { word: 'Build', line: 'Our own harness, inside Zenova.', topics: ['LLM, classic ML, or plain code?', 'RAG', 'agent loops', 'guardrails', 'evals', 'fine-tuning', 'fast vs thinking models'] },
-  { word: 'Trust', line: 'Where AI fails, and how to stay safe.', topics: ['hallucinations', 'prompt injection', 'data privacy', 'bias', 'AI literacy'] },
+  { word: 'Build', line: 'Our own harness, inside Zenova.', topics: ['LLM, classic ML, or plain code?', 'RAG', 'agent loops', 'harness engineering', 'guardrails', 'evals', 'open-weight models', 'inference engineering & cost'] },
+  { word: 'Trust', line: 'Where AI fails, and how to stay safe.', topics: ['hallucinations', 'prompt injection', 'agent permissions', 'data privacy', 'bias', 'EU AI Act', 'AI literacy'] },
 ];
 
 export function whyScene(host: HTMLElement): Mounted {
