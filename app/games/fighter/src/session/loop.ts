@@ -1,152 +1,144 @@
-// Scene: what an agent is. Four parts in a circle: the context (memory), the model (the brain), the harness (your
-// code) and the tools. Next to it, the code that is the whole agent. Space runs one loop: a pulse goes round and the
-// matching code line lights, and the tool it calls lights in the list. Hanoi and Fight run the same loop with
-// different tools. Simulated: no API calls.
+// Scene: what an agent is. An LLM with a body (tools to act), run in a loop by your code: send the context, the LLM
+// picks a tool, your code runs it and adds the result to the context, round again until no tool call.
+// The picture (for everyone) and the loop as code (for the technical people) light up together, step by step.
+// Scripted: no API calls.
 import { h } from '../dom.ts';
-import { svg } from './svg.ts';
-import { GAMES, type Game } from './loop-games.ts';
+import type { Mounted } from './main.ts';
+import { control, NEXT, PAUSE, PLAY, RESTART } from './controls.ts';
+import { drawLoop, runPulse } from './loop-draw.ts';
+import { call, caption, CODE, ROUNDS, STEPS, type Round, type Stage } from './loop-script.ts';
 
-const NODES = [
-  { title: 'Context', who: 'the memory' },
-  { title: 'Model', who: 'the brain' },
-  { title: 'Harness', who: 'your code' },
-  { title: 'Tools', who: 'move_disk' },
-];
-const ARC_LABELS = ['reads it all', 'writes a tool call', 'runs it, checks rules', 'result comes back'];
+const PLAY_MS = 1400;
+const SHOWN_CARDS = 5; // the context stack shows the newest few; the rest is a "+N earlier" pill
+/** The arc the dot runs along at each stage: 0 context → LLM, 1 LLM → tools, 2 tools → context. */
+const ARC: Partial<Record<Stage, number>> = { send: 0, reply: 1, remember: 2 };
+/** The stations lit at each stage: 0 context, 1 LLM, 2 tools. */
+const LIT: Record<Stage, number[]> = { send: [0, 1], reply: [1, 2], run: [2], remember: [0], stop: [1] };
 
-// The circle: context on the left, then clockwise model (top), harness (right), tools (bottom).
-const C = 250;
-const R = 165;
-const NODE_R = 58;
-const angle = (k: number) => ((180 + 90 * k) * Math.PI) / 180;
-const point = (a: number, r = R) => [C + r * Math.cos(a), C + r * Math.sin(a)] as const;
-const PULSE_MS = 380;
-
-function drawAgent() {
-  const el = svg('svg', { viewBox: '-70 0 640 500', class: 'loop-svg', role: 'img', 'aria-label': 'An agent: context, model, harness and tools in a loop' });
-  const defs = svg('defs', {});
-  const marker = svg('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: 7, refY: 5, markerUnits: 'userSpaceOnUse', markerWidth: 16, markerHeight: 16, orient: 'auto-start-reverse' });
-  marker.append(svg('path', { d: 'M0,0 L10,5 L0,10 z', class: 'arrow-head' }));
-  defs.append(marker);
-  el.append(defs, svg('text', { x: C, y: C - 4, class: 'agent-word' }, 'the agent'), svg('text', { x: C, y: C + 22, class: 'agent-sub' }, 'all four together'));
-  const arcs = ARC_LABELS.map((label, k) => {
-    const [x0, y0] = point(angle(k) + 0.42);
-    const [x1, y1] = point(angle(k + 1) - 0.42);
-    const arc = svg('path', { d: `M ${x0} ${y0} A ${R} ${R} 0 0 1 ${x1} ${y1}`, class: 'loop-arc', 'marker-end': 'url(#arrow)' });
-    const [lx, ly] = point(angle(k) + Math.PI / 4, R + 46);
-    el.append(arc, svg('text', { x: lx, y: ly, class: 'arc-label', 'text-anchor': lx > C + 5 ? 'start' : lx < C - 5 ? 'end' : 'middle' }, label));
-    return arc;
-  });
-  const titles: SVGElement[] = [];
-  const whos: SVGElement[] = [];
-  const nodes = NODES.map((n, k) => {
-    const [x, y] = point(angle(k));
-    const g = svg('g', { class: `loop-node${k === 1 ? ' model' : ''}`, transform: `translate(${x} ${y})` });
-    const title = svg('text', { class: 'node-title', y: -4 }, n.title);
-    const who = svg('text', { class: 'node-who', y: 20 }, n.who);
-    g.append(svg('circle', { r: NODE_R }), title, who);
-    el.append(g);
-    titles.push(title);
-    whos.push(who);
-    return g;
-  });
-  return { el, arcs, nodes, titles, whos };
+interface Card {
+  kind: 'task' | 'llm' | 'result';
+  who: string;
+  text: string;
 }
 
-export function loopScene(host: HTMLElement): () => void {
-  let game: Game = GAMES[0]!;
-  let turn = 0;
-  let busy = false;
-  let timers: number[] = [];
-  let rows: HTMLElement[] = [];
-  let toolRows: HTMLElement[] = [];
+/** What one round writes into the context: the LLM's pick, then the tool's result. */
+const written = (r: Round): Card[] =>
+  r.tool ? [{ kind: 'llm', who: 'LLM', text: call(r) }, { kind: 'result', who: 'Result', text: r.board! }] : [{ kind: 'llm', who: 'LLM', text: `“${r.say}”` }];
 
-  const agent = drawAgent();
-  const code = h('div.code-annot', { 'aria-label': 'The agent in code' });
-  const toolList = h('ul.tool-list');
-  const tools = h('section.tools-card', null, h('h2.tools-title', null, 'Tools'), h('p.tools-lead', null, 'What the agent can do. The model picks one, your code runs it.'), toolList);
-  const run = h('button.btn', { type: 'button' }, 'Run one loop') as HTMLButtonElement;
-  const segs = GAMES.map((g) => h('button.seg', { type: 'button', 'aria-pressed': 'false' }, g.label) as HTMLButtonElement);
+export function loopScene(host: HTMLElement): Mounted {
+  const d = drawLoop();
 
-  host.replaceChildren(
-    h(
-      'div.loop',
-      null,
-      h('header.bar-top', null, h('p.scene-title', null, h('b', null, 'The agent.'), ' Four parts, one loop.'), h('div.controls', null, h('div.segs', null, ...segs), run)),
-      h('div.loop-main', null, agent.el, h('div.loop-right', null, code, tools)),
-    ),
+  // Beside the picture: the loop as code, the line doing the work lit in step with the circle.
+  const loopLines = CODE.map((c) => h('code.code-line', null, c.line));
+  const codeCard = h('div.code-view', null, h('p.code-head', null, 'The loop: the whole agent'), ...loopLines);
+  // Under it, one tool: a plain three-line function. Its name follows the tool the LLM picks this round.
+  const toolName = h('span', null, 'move_to_C');
+  const toolTower = h('span', null, 'C');
+  const toolCard = h(
+    'div.code-view.tool-example',
+    null,
+    h('p.code-head', null, 'A tool is just a function'),
+    h('code.code-line', null, h('span.kw', null, 'def '), toolName, '(disk):'),
+    h('code.code-line', null, '    move(disk, to="', toolTower, '")'),
+    h('code.code-line', null, '    ', h('span.kw', null, 'return'), ' board'),
   );
 
-  function light(node: number | null, line: number | null): void {
-    agent.nodes.forEach((n, i) => n.classList.toggle('on', i === node));
-    // The arc that leads into the lit part glows too.
-    agent.arcs.forEach((a, i) => a.classList.toggle('on', node !== null && (i + 1) % 4 === node));
-    rows.forEach((r, i) => r.classList.toggle('on', i === line));
-    // The while line stays lit for the whole loop: we are inside it.
-    rows[1]!.classList.toggle('looping', node !== null);
-  }
+  const say = h('p.loop-caption');
+  const next = control('primary', NEXT, 'Next step');
+  const play = control('quiet', PLAY, 'Play');
+  const reset = control('quiet', RESTART, 'Start over');
+  host.replaceChildren(h('div.loop', null, h('p.scene-title.loop-title', null, h('b', null, 'LLM + harness = agent.'), ' The brain, plus a body to act.'), h('div.loop-card', null, d.el), h('div.loop-right', null, codeCard, toolCard), say, h('div.controls-row', null, next.el, play.el, reset.el)));
 
-  function start(g: Game): void {
-    timers.forEach(clearTimeout);
-    timers = [];
-    game = g;
-    turn = 0;
-    busy = false;
-    segs.forEach((s, k) => s.setAttribute('aria-pressed', String(GAMES[k] === g)));
-    agent.titles[0]!.textContent = g.memory.title;
-    agent.whos[0]!.textContent = g.memory.who;
-    agent.whos[3]!.textContent = g.toolsWho;
-    rows = g.code.map((c, k) => h(k === 2 ? 'div.code-row.model' : 'div.code-row', null, h('code.code-line', null, c.line), h('span.code-note', null, c.note)));
-    code.replaceChildren(...rows);
-    toolRows = g.tools.map((t) => h('li.tool', null, h('code.tool-name', null, t.name), h('span.tool-text', null, t.text)));
-    toolList.replaceChildren(...toolRows);
-    toolList.classList.toggle('many', g.tools.length > 4);
-    run.disabled = false;
-    run.textContent = 'Run one loop';
-    light(null, null);
-  }
+  let at = -1;
+  let timer = 0;
+  let stopPulse = () => {};
 
-  function runLoop(): void {
-    if (busy || turn >= game.turns.length) return;
-    busy = true;
-    const t = game.turns[turn]!;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // With a tool call: model → harness checks → tool runs → result back. Without one: model → harness, and stop.
-    const steps: [number, number][] = t.call ? [[1, 2], [2, 3], [3, 4], [0, game.appendLine]] : [[1, 2], [2, 3], [2, game.noneLine]];
-    const at = (k: number) => (reduce ? 0 : k * PULSE_MS);
-    toolRows.forEach((r) => r.classList.remove('on'));
-    steps.forEach(([node, line], k) => timers.push(window.setTimeout(() => light(node, line), at(k))));
-    // The called tool lights when the pulse reaches Tools.
-    const called = toolRows[game.tools.findIndex((x) => x.name.startsWith(t.tool ?? '\0'))];
-    if (called) timers.push(window.setTimeout(() => called.classList.add('on'), at(2)));
-    timers.push(
-      window.setTimeout(
-        () => {
-          turn++;
-          busy = false;
-          if (turn >= game.turns.length) {
-            run.disabled = true;
-            run.textContent = game.id === 'hanoi' ? 'Solved' : '…until a knockout';
-          }
-        },
-        at(steps.length - 1) + 80,
-      ),
+  /** Draws step `i` from scratch (-1 = before the first step), so any step can be shown on its own. */
+  function show(i: number, animate: boolean): void {
+    at = i;
+    const s = STEPS[i];
+    const r = s ? ROUNDS[s.round]! : null;
+    const done = s?.stage === 'reply' && !r?.tool; // a reply with no tool call: nothing goes to the tools
+    const picked = s && r?.tool && (s.stage === 'reply' || s.stage === 'run') ? r.tool : null;
+
+    // The circle: lit stations, lit arc, and the dot running along it.
+    d.nodes.forEach((n, k) => n.classList.toggle('on', !!s && (done ? k === 1 : LIT[s.stage].includes(k))));
+    const arc = s && !done ? ARC[s.stage] : undefined;
+    d.arcs.forEach((a, k) => a.classList.toggle('on', k === arc));
+    stopPulse();
+    if (animate && arc !== undefined) stopPulse = runPulse(d, arc);
+    d.round.textContent = !s ? 'ready' : s.stage === 'stop' ? 'solved ✓' : `round ${s.round + 1}`;
+
+    // The LLM's bubble: what it says when it replies, otherwise who it is.
+    const speaking = s?.stage === 'reply' && r;
+    d.bubble.classList.toggle('speaking', !!speaking);
+    d.bubble.replaceChildren(
+      ...(speaking ? [h('p.bubble-say', null, `“${r.say}”`), r.tool ? h('code.call', null, call(r)) : ''] : [h('p.llm-name', null, 'Claude Sonnet 5.5'), h('p.llm-note', null, 'not your code')]),
     );
+
+    // The tools: the one it picked lights up, then runs.
+    d.chips.forEach((chip, name) => {
+      chip.classList.toggle('on', name === picked);
+      chip.classList.toggle('run', name === picked && s?.stage === 'run');
+    });
+
+    // The context: the task, then every round already written in. Newest on top.
+    const cards: Card[] = [{ kind: 'task', who: 'Task', text: 'all disks to C' }];
+    ROUNDS.forEach((round, k) => {
+      if (STEPS.findIndex((st) => st.round === k && (st.stage === 'remember' || st.stage === 'stop')) <= i) cards.push(...written(round));
+    });
+    const grew = animate && (s?.stage === 'remember' || s?.stage === 'stop');
+    const newest = cards.slice(-SHOWN_CARDS).reverse();
+    d.stack.replaceChildren(
+      ...newest.map((c, k) => h(`li.ctx-card.${c.kind}${grew && k < (s?.stage === 'stop' ? 1 : 2) ? '.new' : ''}`, null, h('b', null, c.who), ' ', c.text)),
+      ...(cards.length > SHOWN_CARDS ? [h('li.ctx-more', null, `+ ${cards.length - SHOWN_CARDS} earlier`)] : []),
+    );
+
+    // The code: the line doing the work. The last round stops at "break".
+    const line = s?.stage === 'stop' || done ? 'reply' : s?.stage;
+    loopLines.forEach((el, k) => el.classList.toggle('on', !!line && CODE[k]!.stage === line));
+    const tool = r?.tool ?? 'move_to_C';
+    toolName.textContent = tool;
+    toolTower.textContent = tool.slice(-1);
+    toolCard.classList.toggle('run', s?.stage === 'run');
+
+    say.textContent = s ? caption(s) : 'The context starts with only the task. Press Next step.';
+    const end = i >= STEPS.length - 1;
+    next.el.disabled = end;
+    if (end) stopPlaying();
   }
 
-  run.addEventListener('click', runLoop);
-  segs.forEach((s, k) => s.addEventListener('click', () => start(GAMES[k]!)));
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {
-      e.preventDefault();
-      runLoop();
-    }
-  };
-  window.addEventListener('keydown', onKey);
-  start(game);
+  function stopPlaying(): void {
+    clearInterval(timer);
+    timer = 0;
+    play.set(PLAY, 'Play');
+  }
 
-  return () => {
-    timers.forEach(clearTimeout);
-    window.removeEventListener('keydown', onKey);
+  next.el.addEventListener('click', () => show(at + 1, true));
+  play.el.addEventListener('click', () => {
+    if (timer) return stopPlaying();
+    if (at >= STEPS.length - 1) show(-1, false);
+    play.set(PAUSE, 'Pause');
+    show(at + 1, true);
+    timer = window.setInterval(() => show(at + 1, true), PLAY_MS);
+  });
+  reset.el.addEventListener('click', () => {
+    stopPlaying();
+    show(-1, false);
+  });
+  show(-1, false);
+  return {
+    stop: () => {
+      stopPlaying();
+      stopPulse();
+    },
+    // The arrow keys: one step forward or back. False at either end, so the app moves to the next or previous slide.
+    step: (by) => {
+      const k = at + by;
+      if (k < -1 || k > STEPS.length - 1) return false;
+      stopPlaying();
+      show(k, by > 0);
+      return true;
+    },
   };
 }

@@ -1,4 +1,5 @@
-"""The same Hanoi agent loop as agent.py, with Claude: it shows a readable summary of its thinking every turn."""
+"""The same Hanoi agent loop as agent.py, with Claude and three tools (hanoi_tools.py): it shows a readable summary of
+its thinking every turn."""
 
 import sys
 import time
@@ -6,36 +7,18 @@ import time
 import anthropic
 from dotenv import load_dotenv
 
-from agent import run_tool
 from hanoi import new_game, solved
+from hanoi_tools import make_tools, run_tool
 from players import board_text
 
 load_dotenv()
 client = anthropic.Anthropic()
 
-TOOLS = [
-    {
-        "name": "move_disk",
-        "description": "Move the top disk from one peg to another.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "from_peg": {"type": "string", "enum": ["A", "B", "C"]},
-                "to_peg": {"type": "string", "enum": ["A", "B", "C"]},
-            },
-            "required": ["from_peg", "to_peg"],
-            "additionalProperties": False,
-        },
-        "strict": True,
-    }
-]
-
-
-def call_model(messages, model, effort):
+def call_model(messages, model, effort, tools):
     return client.messages.create(
         model=model,
         max_tokens=16000,
-        tools=TOOLS,
+        tools=tools,
         # One tool call per response. Without it, Claude sends all 15 moves in one go and never thinks between them.
         tool_choice={"type": "auto", "disable_parallel_tool_use": True},
         # "summarized": without it the thinking blocks come back empty. Claude never shows the raw thinking.
@@ -46,21 +29,22 @@ def call_model(messages, model, effort):
 
 
 # A harness choice: without this line, Claude plans once at move 1 and then just executes.
-THINK_EACH_MOVE = "Before each move_disk call, write one short sentence saying why this move is right."
+THINK_EACH_MOVE = "Before each tool call, write one short sentence saying why this move is right."
 
 
 def play_steps(n, effort="medium", model="claude-sonnet-5-5", think_each_move=True):
-    pegs = new_game(n)
-    task = board_text(pegs, n) + "\nSolve it using the move_disk tool, one move per call."
+    towers = new_game(n)
+    tools = make_tools(n)
+    task = board_text(towers, n) + "\nSolve it with the move tools, one move per call."
     if think_each_move:
         task += "\n" + THINK_EACH_MOVE
     messages = [{"role": "user", "content": task}]
     moves = illegal = calls = 0
     start = time.time()
-    yield {"type": "start", "board": pegs, "disks": n, "optimal": 2**n - 1, "model": model, "effort": effort}
-    while not solved(pegs, n) and moves + illegal < 3 * (2**n - 1):
+    yield {"type": "start", "board": towers, "disks": n, "optimal": 2**n - 1, "model": model, "effort": effort}
+    while not solved(towers, n) and moves + illegal < 3 * (2**n - 1):
         asked = time.time()
-        response = call_model(messages, model, effort)
+        response = call_model(messages, model, effort, tools)
         ms = int((time.time() - asked) * 1000)
         calls += 1
         if response.stop_reason == "refusal":
@@ -78,15 +62,16 @@ def play_steps(n, effort="medium", model="claude-sonnet-5-5", think_each_move=Tr
             continue
         results = []
         for block in tool_uses:
-            pegs, result, ok = run_tool(pegs, n, block.input)
+            towers, result, ok, move = run_tool(towers, n, block.name, block.input)
             moves += ok
             illegal += not ok
-            results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
+            # is_error tells the model this call failed, so it reads the reason instead of assuming it worked.
+            results.append({"type": "tool_result", "tool_use_id": block.id, "content": result, "is_error": not ok})
             yield {
                 "type": "move",
-                "move": f"{block.input['from_peg']}→{block.input['to_peg']}",
+                "move": move,
                 "ok": ok,
-                "board": pegs,
+                "board": towers,
                 "moves": moves,
                 "illegal": illegal,
                 "thinking": thinking,
@@ -101,7 +86,7 @@ def play_steps(n, effort="medium", model="claude-sonnet-5-5", think_each_move=Tr
             thinking, said = "", ""
         # All results of one turn go back together, in one user message.
         messages.append({"role": "user", "content": results})
-    yield {"type": "done", "solved": solved(pegs, n), "moves": moves, "illegal": illegal, "calls": calls, "seconds": round(time.time() - start, 1)}
+    yield {"type": "done", "solved": solved(towers, n), "moves": moves, "illegal": illegal, "calls": calls, "seconds": round(time.time() - start, 1)}
 
 
 if __name__ == "__main__":

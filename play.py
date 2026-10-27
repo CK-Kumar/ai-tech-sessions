@@ -6,29 +6,29 @@ from hanoi import apply, new_game, solved
 from players import ask_jev
 
 
-def board_key(pegs):
-    return tuple(tuple(pegs[p]) for p in ["A", "B", "C"])
+def board_key(towers):
+    return tuple(tuple(towers[p]) for p in ["A", "B", "C"])
 
 
 def play(n, ask, max_factor=3):
     optimal = 2**n - 1
-    pegs = new_game(n)
-    seen = {board_key(pegs)}
+    towers = new_game(n)
+    seen = {board_key(towers)}
     repeats = 0
     total_ms = 0
     moves = 0
-    while not solved(pegs, n) and moves < optimal * max_factor:
-        move, probs, ms = ask(pegs, n)
-        pegs = apply(pegs, move)
+    while not solved(towers, n) and moves < optimal * max_factor:
+        move, probs, ms = ask(towers, n)
+        towers = apply(towers, move)
         moves += 1
         total_ms += ms
         # A board seen before means the player went in a circle.
-        if board_key(pegs) in seen:
+        if board_key(towers) in seen:
             repeats += 1
-        seen.add(board_key(pegs))
+        seen.add(board_key(towers))
     return {
         "disks": n,
-        "solved": solved(pegs, n),
+        "solved": solved(towers, n),
         "moves": moves,
         "optimal": optimal,
         "repeats": repeats,

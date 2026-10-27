@@ -5,6 +5,7 @@ import os
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import anthropic
 import requests
 from dotenv import load_dotenv
 from urllib.parse import parse_qs, urlparse
@@ -15,6 +16,11 @@ from claude_agent import play_steps as claude_steps
 load_dotenv()
 
 LOG = "runs/fight.jsonl"
+claude = anthropic.Anthropic()
+
+# What Haiku thought last, for the page to show (GET /thinking). One thought at a time: a new question only takes
+# the screen once the last thought has finished, so the room sees each one to the end, even the ones that came too late.
+LIVE = {"thinking": "", "move": "", "ms": 0, "busy": False}
 
 
 def ask_jev(model, state, questions):
@@ -29,33 +35,70 @@ def ask_jev(model, state, questions):
     return data["answers"], data.get("usage", {})
 
 
-def ask_luna_text(state, questions, effort=os.environ.get("LUNA_EFFORT", "none")):
-    # Same question Jev gets, but as a prompt: Luna has to *write* its answer, token by token.
-    # The game asks "move"; its warm-up ping before a fight asks "warmup".
-    name, q = next(iter(questions.items()))
-    prompt = (
+def move_prompt(state, q):
+    return (
         q["instructions"]
         + "\n\nSituation:\n" + "\n".join(f"{k}: {v}" for k, v in state.items())
         + "\n\nMoves:\n" + "\n".join(f"{m}: {facts}" for m, facts in q["criteria"].items())
         + "\n\nReply with the move name only."
     )
-    r = requests.post(
-        "https://api.openai.com/v1/responses",
-        headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
-        # Thinking tokens count toward max_output_tokens, so leave room when thinking is on.
-        json={"model": "gpt-6-luna", "input": prompt, "reasoning": {"effort": effort}, "max_output_tokens": 16 if effort == "none" else 4000},
-        timeout=60,
-    )
-    r.raise_for_status()
-    data = r.json()
-    text = next(c["text"] for item in data["output"] if item["type"] == "message" for c in item["content"])
+
+
+def parse_move(text, q):
     move = text.strip().strip("`.\"'").lower()
     # Sometimes it writes the description ("Option A") instead of the key ("a").
     by_description = {str(facts).lower(): m for m, facts in q["criteria"].items()}
     move = by_description.get(move, move)
     if move not in q["criteria"]:
-        raise ValueError(f"Luna wrote {text!r}, not a move")
-    return {name: {"type": "choice", "choice": move, "text": text}}, data.get("usage", {})
+        raise ValueError(f"wrote {text!r}, not a move")
+    return move
+
+
+def ask_luna_text(state, questions, effort=os.environ.get("LUNA_EFFORT", "none")):
+    # Same question Jev gets, but as a prompt: Luna has to *write* its answer, token by token.
+    # The game asks "move"; its warm-up ping before a fight asks "warmup".
+    name, q = next(iter(questions.items()))
+    r = requests.post(
+        "https://api.openai.com/v1/responses",
+        headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
+        # Thinking tokens count toward max_output_tokens, so leave room when thinking is on.
+        json={"model": "gpt-6-luna", "input": move_prompt(state, q), "reasoning": {"effort": effort}, "max_output_tokens": 16 if effort == "none" else 4000},
+        timeout=60,
+    )
+    r.raise_for_status()
+    data = r.json()
+    text = next(c["text"] for item in data["output"] if item["type"] == "message" for c in item["content"])
+    return {name: {"type": "choice", "choice": parse_move(text, q), "text": text}}, data.get("usage", {})
+
+
+def ask_haiku(state, questions):
+    # The thinking fighter: same prompt as Luna's, but Claude shows a summary of its thinking.
+    name, q = next(iter(questions.items()))
+    shown = not LIVE["busy"]
+    if shown:
+        LIVE.update(thinking="", move="", ms=0, busy=True)
+    start = time.time()
+    try:
+        with claude.messages.stream(
+            model="claude-haiku-5-5",
+            max_tokens=4000,
+            # "summarized": without it the thinking comes back empty. Claude never shows the raw thinking.
+            thinking={"type": "adaptive", "display": "summarized"},
+            output_config={"effort": "medium"},
+            messages=[{"role": "user", "content": move_prompt(state, q)}],
+        ) as stream:
+            for event in stream:
+                if shown and event.type == "content_block_delta" and event.delta.type == "thinking_delta":
+                    LIVE["thinking"] += event.delta.thinking
+            message = stream.get_final_message()
+    finally:
+        if shown:
+            LIVE["busy"] = False
+    text = "".join(b.text for b in message.content if b.type == "text")
+    move = parse_move(text, q)
+    if shown:
+        LIVE.update(move=move, ms=int((time.time() - start) * 1000))
+    return {name: {"type": "choice", "choice": move, "text": text}}, {"input_tokens": message.usage.input_tokens}
 
 
 def ask_luna_decisions(state, questions):
@@ -88,6 +131,9 @@ class Handler(BaseHTTPRequestHandler):
         # /hanoi?agent=claude&disks=4&model=claude-sonnet-5-5&effort=medium streams the agent loop to the page, one move per message
         # (Server-Sent Events: the page keeps the connection open and gets each line as soon as it's written).
         url = urlparse(self.path)
+        if url.path == "/thinking":
+            self.reply(200, LIVE)
+            return
         if url.path != "/hanoi":
             self.reply(404, {"error": "not found"})
             return
@@ -119,8 +165,8 @@ class Handler(BaseHTTPRequestHandler):
         if model.startswith("typesafe/jev"):
             # "typesafe/jev-1.14.0" → "jev-1.14.0": the page picks the version.
             answers, usage = ask_jev(model.split("/")[1], body["state"], body["questions"])
-        elif model.startswith("openai/gpt-6-luna"):
-            ask = ask_luna_decisions if model.endswith("decisions") else ask_luna_text
+        elif model.startswith("openai/gpt-6-luna") or model == "anthropic/claude-haiku-5-5":
+            ask = ask_haiku if model.startswith("anthropic") else ask_luna_decisions if model.endswith("decisions") else ask_luna_text
             try:
                 answers, usage = ask(body["state"], body["questions"])
             except Exception as e:
@@ -141,8 +187,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(out)))
+        self.send_header("Access-Control-Allow-Origin", "*")  # /thinking is read by the page, on another port
         self.end_headers()
-        self.wfile.write(out)
+        try:
+            self.wfile.write(out)
+        except BrokenPipeError:
+            pass  # the game gave up on a late answer and closed the connection
 
     def log_message(self, *args):
         pass  # our own print line above is enough

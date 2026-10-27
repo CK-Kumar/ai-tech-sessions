@@ -196,6 +196,9 @@ export class Match {
     this.decisionListeners.push(l);
   }
 
+  /** True while the presenter has paused the fight. */
+  held = false;
+
   stop(): void {
     this.stopped = true;
     for (const p of this.pending) p?.controller.abort();
@@ -425,6 +428,13 @@ export class Match {
     const start = this.clock.now();
     let ticks = 0;
     while (!this.over && !this.stopped) {
+      if (this.held) {
+        // Pause button: the fight stands still, and the pacing doesn't race to catch up afterwards.
+        const t0 = this.clock.now();
+        await this.clock.sleep(50);
+        this.pausedMs += this.clock.now() - t0;
+        continue;
+      }
       if (this.waiting()) {
         const t0 = this.clock.now();
         await this.clock.sleep(2);

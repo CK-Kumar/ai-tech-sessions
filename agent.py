@@ -17,14 +17,14 @@ TOOLS = [
     {
         "type": "function",
         "name": "move_disk",
-        "description": "Move the top disk from one peg to another.",
+        "description": "Move the top disk from one tower to another.",
         "parameters": {
             "type": "object",
             "properties": {
-                "from_peg": {"type": "string", "enum": ["A", "B", "C"]},
-                "to_peg": {"type": "string", "enum": ["A", "B", "C"]},
+                "from_tower": {"type": "string", "enum": ["A", "B", "C"]},
+                "to_tower": {"type": "string", "enum": ["A", "B", "C"]},
             },
-            "required": ["from_peg", "to_peg"],
+            "required": ["from_tower", "to_tower"],
             "additionalProperties": False,
         },
         "strict": True,
@@ -49,13 +49,13 @@ def call_model(context, effort, model):
     return r.json()
 
 
-def run_tool(pegs, n, args):
-    move = f"{args['from_peg']}→{args['to_peg']}"
+def run_tool(towers, n, args):
+    move = f"{args['from_tower']}→{args['to_tower']}"
     # The model can ask for anything, so the harness checks the rules, not the model.
-    if move not in legal_moves(pegs):
-        return pegs, f"Illegal move {move}. Board unchanged:\n{board_text(pegs, n)}", False
-    pegs = apply(pegs, move)
-    return pegs, f"Done: {move}.\n{board_text(pegs, n)}", True
+    if move not in legal_moves(towers):
+        return towers, f"Illegal move {move}. Board unchanged:\n{board_text(towers, n)}", False
+    towers = apply(towers, move)
+    return towers, f"Done: {move}.\n{board_text(towers, n)}", True
 
 
 def thinking_of(output):
@@ -65,13 +65,13 @@ def thinking_of(output):
 
 def play_steps(n, effort="medium", model="gpt-6-luna"):
     """The agent loop, one event at a time, so a page can draw each move as it happens."""
-    pegs = new_game(n)
+    towers = new_game(n)
     # The context is the whole conversation; it grows every turn and is sent in full each call.
-    context = [{"role": "user", "content": board_text(pegs, n) + "\nSolve it using the move_disk tool, one move per call."}]
+    context = [{"role": "user", "content": board_text(towers, n) + "\nSolve it using the move_disk tool, one move per call."}]
     moves = illegal = calls = 0
     start = time.time()
-    yield {"type": "start", "board": pegs, "disks": n, "optimal": 2**n - 1, "model": model, "effort": effort}
-    while not solved(pegs, n) and moves + illegal < 3 * (2**n - 1):
+    yield {"type": "start", "board": towers, "disks": n, "optimal": 2**n - 1, "model": model, "effort": effort}
+    while not solved(towers, n) and moves + illegal < 3 * (2**n - 1):
         asked = time.time()
         response = call_model(context, effort, model)
         ms = int((time.time() - asked) * 1000)
@@ -88,15 +88,15 @@ def play_steps(n, effort="medium", model="gpt-6-luna"):
             continue
         for item in tool_calls:
             args = json.loads(item["arguments"])
-            pegs, result, ok = run_tool(pegs, n, args)
+            towers, result, ok = run_tool(towers, n, args)
             moves += ok
             illegal += not ok
             context.append({"type": "function_call_output", "call_id": item["call_id"], "output": result})
             yield {
                 "type": "move",
-                "move": f"{args['from_peg']}→{args['to_peg']}",
+                "move": f"{args['from_tower']}→{args['to_tower']}",
                 "ok": ok,
-                "board": pegs,
+                "board": towers,
                 "moves": moves,
                 "illegal": illegal,
                 "thinking": thinking,
@@ -105,7 +105,7 @@ def play_steps(n, effort="medium", model="gpt-6-luna"):
                 "tool_call": {"name": item["name"], "arguments": args},
             }
             thinking, thought = "", 0  # one response's thinking belongs to its first move only
-    yield {"type": "done", "solved": solved(pegs, n), "moves": moves, "illegal": illegal, "calls": calls, "seconds": round(time.time() - start, 1)}
+    yield {"type": "done", "solved": solved(towers, n), "moves": moves, "illegal": illegal, "calls": calls, "seconds": round(time.time() - start, 1)}
 
 
 def play(n, effort="medium", model="gpt-6-luna"):

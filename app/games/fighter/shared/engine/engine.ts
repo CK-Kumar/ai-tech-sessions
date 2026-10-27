@@ -30,7 +30,8 @@ export const ROUND_TICKS = 60 * TICK_HZ;
 export const INTRO_TICKS = 90;
 export const KO_OUTRO_TICKS = 150;
 export const TIME_OUTRO_TICKS = 90;
-export const MAX_HP = 100;
+// 50, not Opper's 100: halves a round, so the live fight fits the talk.
+export const MAX_HP = 50;
 export const MAX_METER = 100;
 export const WINS_NEEDED = 2;
 export const MAX_ROUNDS = 5;

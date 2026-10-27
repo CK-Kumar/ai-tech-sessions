@@ -1,10 +1,9 @@
-// Scene: inside the model. Text is cut into pieces, the pieces become numbers, a giant formula (multiply and add,
-// layer after layer) turns them into a score for every piece, the top one is the next piece, and it starts again.
-// The last step zooms out: the model is a loop (one piece per pass) inside your harness's loop, and that is why AI
-// needs so much compute. A simulation: the tokenizer, the IDs and the scores are made up.
+// Scene: inside the model. One picture, top to bottom, that never changes shape; four tabs fill it in:
+// the text is cut into pieces, each piece is a number, the formula turns the numbers into a score for every piece,
+// and the winner goes on the end of the text, round again. A simulation: the pieces, IDs and scores are made up.
 import { h } from '../dom.ts';
-import { drawLoops, drawMatmul, drawNetwork } from './network-draw.ts';
-import { drawMap } from './network-map.ts';
+import type { Mounted } from './main.ts';
+import { drawMatmul, drawNetwork, MATMUL_MS } from './network-draw.ts';
 
 // A fake dictionary of pieces. Real ones have ~100,000 pieces or more.
 const IDS: Record<string, number> = {
@@ -14,44 +13,55 @@ const IDS: Record<string, number> = {
 };
 // Not every word is one piece: "capital" is cut into two, and so is "Madrid" when the model writes it.
 const START = ['The', ' cap', 'ital', ' of', ' Spain', ' is'];
-// Each pass: the top five scores. The first one wins and is added to the text.
-const PASSES: [string, number][][] = [
+// Each run of the formula: the top scores. The first one wins and goes on the end of the text.
+const RUNS: [string, number][][] = [
   [[' Mad', 0.84], [' a', 0.06], [' Barcelona', 0.04], [' the', 0.03], [' located', 0.02]],
   [['rid', 0.96], ['ison', 0.02], ['ness', 0.01], ['eira', 0.005]],
   [['.', 0.71], [',', 0.15], [' and', 0.06], [' since', 0.04], [' (', 0.02]],
 ];
 
 const STEPS = [
-  { name: 'Pieces', line: 'The model never sees a tool, or even a word. The text is cut into pieces, and a piece is not always a word.' },
-  { name: 'Numbers', line: 'Each piece has a number: its place in a dictionary of pieces.' },
-  { name: 'Close in meaning', line: 'Training gave each piece a spot on a map. Pieces used the same way end up close.' },
-  { name: 'The formula', line: 'The numbers go through one giant formula: multiply and add, layer after layer.' },
-  { name: 'Next piece', line: 'Out comes a score for every piece in the dictionary. The top one wins.' },
-  { name: 'Again', line: 'Add it to the text and run the formula again. One piece at a time.' },
-  { name: 'Loops in loops', line: 'The model is a loop, inside your harness’s loop. That’s why AI needs so much compute.' },
+  { name: 'Pieces', line: 'Text is cut into pieces.' },
+  { name: 'Numbers', line: 'Each piece is a number.' },
+  { name: 'The formula', line: 'Numbers in. A score for every piece out.' },
+  { name: 'One piece at a time', line: 'The winner goes on the end. Run it again.' },
 ];
+const HOOK = 'That’s all a model is: numbers, multiplied, in a loop.';
 
-const show = (piece: string) => (piece === '\n' ? '↵' : piece.trim());
+const show = (piece: string) => piece.trim();
 // A piece with no space before it that starts with a letter carries on the word before it ("cap" + "ital").
-const carriesOn = (piece: string, k: number) => k > 0 && /^[a-z]/.test(piece);
+const carriesOn = (piece: string) => /^[a-z]/.test(piece);
+const pct = (score: number) => `${Math.round(score * 100)}%`;
+/** A short note under an element (the same callout as the tool slide). */
+function callout(el: Element | null | undefined, note: string): void {
+  if (!(el instanceof HTMLElement)) return;
+  el.classList.add('tk-hit');
+  el.dataset.note = note;
+}
 
-export function networkScene(host: HTMLElement): () => void {
+export function networkScene(host: HTMLElement): Mounted {
   let timers: number[] = [];
+  let at = 0;
   const net = drawNetwork();
-  const mm = drawMatmul();
-  const loops = drawLoops();
-  const map = drawMap();
+  const mm = drawMatmul((r) => net.focus(r)); // each row of the matrix lights its neuron in the network
   const pills = STEPS.map((s, k) => h('button.tk-pill', { type: 'button' }, h('span.tk-num', null, String(k + 1)), s.name) as HTMLButtonElement);
   const line = h('p.tk-line');
-  const sentence = h('p.nn-sentence');
-  const pieces = h('ol.nn-pieces');
-  const bars = h('ol.nn-bars');
-  const hook = h('p.nn-hook', null, 'That’s all a model is: a lot of numbers, multiplied, in a loop.');
-  const inPanel = h('section.nn-panel.in', null, h('h3.nn-head', null, 'Text in'), pieces);
-  const netPanel = h('section.nn-panel.net', null, h('h3.nn-head', null, 'The formula'), net.el, mm.el);
-  const outPanel = h('section.nn-panel.out', null, h('h3.nn-head', null, 'Scores out'), bars);
-  const flow = h('div.nn-flow', null, inPanel, h('span.nn-arrow', null, '→'), netPanel, h('span.nn-arrow', null, '→'), outPanel);
-  let at = 0;
+  const text = h('p.nn-text-row');
+  const pieces = h('div.nn-pieces');
+  const run = h('span.nn-run');
+  const scores = h('ol.nn-scores');
+  // One row per stage, a label on the left. Rows not reached yet stay hidden but keep their space, so nothing moves.
+  const row = (label: string, ...body: Node[]) => h('div.nn-row', null, h('span.nn-label', null, label), h('div.nn-body', null, ...body));
+  const rows = [
+    row('Text', text),
+    row('Pieces', pieces),
+    row(
+      'The model',
+      h('div.nn-model', null, net.el, h('div.nn-formula', null, mm.el, run)),
+    ),
+    row('Scores', scores),
+  ];
+  const back = h('div.nn-back', null, h('span', null, 'the winner goes on the end'));
 
   host.replaceChildren(
     h(
@@ -59,38 +69,35 @@ export function networkScene(host: HTMLElement): () => void {
       null,
       h('header.bar-top', null, h('p.scene-title', null, h('b', null, 'The model.'), ' Numbers in, numbers out.')),
       h('nav.tk-steps', { 'aria-label': 'Steps' }, ...pills),
-      h('section.tk-card.nn-card', null, line, sentence, flow, map.el, loops.el, hook),
+      h('section.tk-card.nn-card', null, line, h('div.nn-pipe', null, h('div.nn-rows', null, ...rows), back)),
     ),
   );
 
   const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
 
-  function addPiece(piece: string, fresh: boolean): void {
-    const cls = `li.nn-piece${fresh ? '.new' : ''}${carriesOn(piece, pieces.childElementCount) ? '.part' : ''}` as const;
-    pieces.append(h(cls, null, h('span.nn-text', null, show(piece)), h('span.nn-same', null, 'same word'), h('span.nn-id', null, String(IDS[piece]))));
-    sentence.append(h(fresh ? 'span.nn-word.new' : 'span.nn-word', null, piece));
+  /** The pieces as chips, grouped by word; the text row is the same pieces, read as a sentence. */
+  function draw(list: string[], fresh: number, note: string | null): void {
+    const words: HTMLElement[] = [];
+    list.forEach((piece, k) => {
+      const chip = h(`span.nn-chip${k >= fresh ? '.new' : ''}`, { style: `--d: ${k * 90}ms` }, h('span.nn-piece', null, show(piece)), h('span.nn-id', null, String(IDS[piece])));
+      if (k > 0 && carriesOn(piece)) words.at(-1)!.append(chip);
+      else words.push(h('span.nn-word', null, chip));
+    });
+    // The callout goes on the first word cut into two pieces ("capital").
+    if (note) callout(words.find((w) => w.childElementCount > 1), note);
+    pieces.replaceChildren(...words);
+    text.replaceChildren(...list.map((piece, k) => h(k >= fresh ? 'span.nn-new' : 'span', null, piece)), h('span.nn-cursor', null, '▍'));
   }
 
-  /** One pass through the formula: pulse, then the scores, then the winner lights up. Calls done() after ~2.6 s. */
-  function pass(p: number, done?: () => void): void {
-    bars.replaceChildren();
-    net.pulse(timers);
-    later(1400, () =>
-      bars.replaceChildren(
-        ...PASSES[p]!.map(([piece, score], k) =>
-          h(
-            'li.nn-bar',
-            { style: `--p: ${Math.round(score * 100)}%` },
-            h('span.nn-text', null, show(piece)),
-            h('span.nn-pct', null, `${Math.round(score * 100)}%`),
-            h('span.nn-id', null, String(IDS[piece] ?? '')),
-            k === 0 ? h('span.nn-win', null, 'next') : null,
-          ),
-        ),
-      ),
+  function drawScores(r: number, note: string | null): void {
+    scores.replaceChildren(
+      ...RUNS[r]!.map(([piece, score]) => h('li.nn-score', { style: `--p: ${pct(score)}` }, h('span.nn-piece', null, show(piece)), h('span.nn-pct', null, pct(score)))),
     );
-    later(2000, () => bars.firstElementChild?.classList.add('top'));
-    if (done) later(2600, done);
+    later(500, () => {
+      const top = scores.firstElementChild as HTMLElement | null;
+      top?.classList.add('top');
+      if (note) callout(top, note);
+    });
   }
 
   function go(k: number): void {
@@ -104,53 +111,60 @@ export function networkScene(host: HTMLElement): () => void {
       else p.removeAttribute('aria-current');
     });
     line.textContent = STEPS[k]!.line;
-    pieces.replaceChildren();
-    sentence.replaceChildren();
-    bars.replaceChildren();
-    net.reset();
-    START.forEach((piece) => addPiece(piece, false));
-    // The picture builds left to right: parts not reached yet are faint.
+    line.classList.remove('nn-hook');
+    // Tabs 1–2 show the text and its pieces; from tab 3 on, the model and the scores too.
+    const lastRow = k < 2 ? 1 : 3;
+    rows.forEach((r, i) => r.classList.toggle('shown', i <= lastRow));
     pieces.classList.toggle('ids', k >= 1);
-    netPanel.classList.toggle('dim', k < 3);
-    outPanel.classList.toggle('dim', k < 4);
-    mm.el.classList.toggle('shown', k === 3);
-    hook.classList.remove('shown');
-    // The map step and the last step swap the pipeline for their own picture.
-    sentence.hidden = flow.hidden = k === 2 || k === 6;
-    map.el.hidden = k !== 2;
-    loops.el.hidden = k !== 6;
+    back.classList.toggle('shown', k === 3);
+    net.reset();
+    mm.clear();
+    scores.replaceChildren();
+    run.textContent = '';
+    const list = [...START];
+    draw(list, list.length, k === 0 ? 'not always a whole word' : null);
+    if (k === 1) callout(pieces.querySelector('.nn-chip'), 'its place in a list of ~100,000 pieces');
 
-    if (k === 0) [...pieces.children].forEach((li, i) => (li as HTMLElement).style.setProperty('--d', `${i * 120}ms`));
-    if (k === 2) map.play(timers);
-    if (k === 3) {
+    if (k === 2) {
+      // The numbers flow through, then one layer worked out as a matrix, then the scores.
       net.pulse(timers);
+      later(1600, () => mm.play(timers));
+      later(1600 + MATMUL_MS + 300, () => drawScores(0, 'top score wins'));
+    }
+    if (k === 3) {
+      // Each run: the winner joins the text, the formula runs again, a new winner.
       mm.play(timers);
-    }
-    if (k === 4) pass(0);
-    if (k === 5) {
-      // Madrid won the last pass: it joins the text, and the formula runs again, twice.
-      addPiece(PASSES[0]![0]![0], true);
-      later(500, () => pass(1, () => addPiece(PASSES[1]![0]![0], true)));
-      later(3400, () => pass(2, () => addPiece(PASSES[2]![0]![0], true)));
-    }
-    if (k === 6) {
-      loops.play(timers);
-      later(3800, () => hook.classList.add('shown'));
+      drawScores(0, null);
+      run.textContent = 'run 1';
+      RUNS.forEach((r, i) =>
+        later(1200 + i * 3000, () => {
+          list.push(r[0]![0]);
+          draw(list, START.length, null); // everything after the start is the model's: blue
+          if (i === RUNS.length - 1) {
+            scores.replaceChildren();
+            run.textContent = '';
+            line.textContent = HOOK;
+            line.classList.add('nn-hook');
+            return;
+          }
+          run.textContent = `run ${i + 2}`;
+          net.pulse(timers);
+          later(1500, () => drawScores(i + 1, null));
+        }),
+      );
     }
   }
 
   pills.forEach((p, k) => p.addEventListener('click', () => go(k)));
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {
-      e.preventDefault();
-      if (at < STEPS.length - 1) go(at + 1);
-    }
-  };
-  window.addEventListener('keydown', onKey);
   go(0);
-
-  return () => {
-    timers.forEach(clearTimeout);
-    window.removeEventListener('keydown', onKey);
+  return {
+    stop: () => timers.forEach(clearTimeout),
+    // The arrow keys: the next or previous tab. False at either end, so the app moves to another slide.
+    step: (by) => {
+      const k = at + by;
+      if (k < 0 || k > STEPS.length - 1) return false;
+      go(k);
+      return true;
+    },
   };
 }

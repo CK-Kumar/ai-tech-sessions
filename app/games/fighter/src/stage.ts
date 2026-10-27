@@ -21,6 +21,8 @@ export class Stage {
   /** How long one tick lasts on screen (ms): TICK_MS / playback speed. */
   tickMs = TICK_MS;
   paused = false;
+  /** The session page turns this off: the hit sounds distract while the room listens. */
+  sound = true;
   onFrame: ((dt: number) => void) | null = null;
 
   constructor(host: HTMLElement, meta: [FighterMeta, FighterMeta]) {
@@ -42,7 +44,7 @@ export class Stage {
     this.renderer.setState(this.prev, this.curr);
     if (events.length) this.renderer.onEvents(events);
     // No sound when fast-forwarding: it would be a wall of noise.
-    if (TICK_MS / this.tickMs <= 2) audio.play(cuesFor(events, this.prev, this.curr));
+    if (this.sound && TICK_MS / this.tickMs <= 2) audio.play(cuesFor(events, this.prev, this.curr));
   }
 
   /** Jump to a state without interpolation or carried-over effects. */

@@ -1,7 +1,8 @@
 // The last scene: the knowledge-sharing title slide, like the cover of the Zenova deck, with its photo.
 import { h } from '../dom.ts';
+import type { Mounted } from './main.ts';
 
-export function endScene(host: HTMLElement): () => void {
+export function endScene(host: HTMLElement): Mounted {
   host.replaceChildren(
     h(
       'div.end',
@@ -19,5 +20,5 @@ export function endScene(host: HTMLElement): () => void {
       ),
     ),
   );
-  return () => {};
+  return { stop: () => {} };
 }

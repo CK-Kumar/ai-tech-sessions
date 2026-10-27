@@ -19,6 +19,8 @@ export const DECISION_MODELS = [
   { id: 'openai/gpt-6-luna-decisions', name: 'GPT-6 Luna Decisions', maker: 'OpenAI' },
   // ai-tech-session: the same Luna, answering as generated text (served by our server.py)
   { id: 'openai/gpt-6-luna-text', name: 'GPT-6 Luna (thinking)', maker: 'OpenAI' },
+  // ai-tech-session: the thinking fighter (served by our server.py)
+  { id: 'anthropic/claude-haiku-5-5', name: 'Claude Haiku 5.5', maker: 'Anthropic' },
   { id: 'azure:global/microsoft-decision-1', name: 'Microsoft Decision 1', maker: 'Microsoft' },
   { id: 'empiriolabs/aplomb-1', name: 'Aplomb 1', maker: 'EmpirioLabs' },
   { id: 'greenpt/metis', name: 'Metis', maker: 'GreenPT' },
